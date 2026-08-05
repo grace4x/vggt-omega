@@ -213,7 +213,13 @@ def process_scene(task: dict) -> dict:
 
     if meta_path.exists() and not task["overwrite"]:
         with np.load(meta_path, allow_pickle=True) as data:
-            return {"status": "cached", "subset": subset, "scene": scene, "num_frames": int(len(data["frame_names"]))}
+            return {
+                "status": "cached",
+                "subset": subset,
+                "scene": scene,
+                "num_frames": int(len(data["frame_names"])),
+                "image_hw": [int(v) for v in data["image_hw"]],
+            }
 
     cameras = read_cameras_bin(Path(task["sparse_dir"]) / "cameras.bin")
     colmap_images = read_images_bin(Path(task["sparse_dir"]) / "images.bin")
@@ -514,6 +520,7 @@ def main() -> int:
                     "path": f"scenes/{task['subset']}/{task['scene']}",
                     "num_frames": result.get("num_frames"),
                     "num_points": result.get("num_points"),
+                    "image_hw": result.get("image_hw"),
                     "scene_scale": result.get("scene_scale"),
                 }
             )

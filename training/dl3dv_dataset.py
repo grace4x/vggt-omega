@@ -43,6 +43,7 @@ class DL3DVDataset(Dataset):
         min_covisibility: float = 0.1,
         augment: bool = True,
         seed: int | None = None,
+        image_hw: tuple[int, int] | None = None,
     ) -> None:
         self.root = Path(root)
         index = json.loads((self.root / "index.json").read_text())
@@ -58,6 +59,13 @@ class DL3DVDataset(Dataset):
             if not self.scenes:
                 raise ValueError(f"no {split!r} scene has {num_frames} frames")
 
+        # It also requires a uniform image size. `max_size` preprocessing keeps
+        # the source aspect ratio, so a portrait DL3DV scene is stored (W, H)
+        # swapped relative to the landscape majority and cannot stack with it.
+        # Resizing does not reconcile them either -- `_resize_shape` preserves
+        # aspect ratio too. Keep one shape and drop the rest.
+        self.image_hw = self._select_shape(image_hw, split)
+
         self.num_frames = num_frames
         self.resolution = resolution
         self.patch_size = patch_size
@@ -68,6 +76,37 @@ class DL3DVDataset(Dataset):
 
     def __len__(self) -> int:
         return len(self.scenes)
+
+    # -- shape filtering ---------------------------------------------------- #
+
+    def _select_shape(self, image_hw: tuple[int, int] | None, split: str) -> tuple[int, int]:
+        """Restrict `self.scenes` to a single stored (H, W) and return it."""
+        by_shape: dict[tuple[int, int], list[dict]] = {}
+        for entry in self.scenes:
+            hw = entry.get("image_hw")
+            if hw is None:  # older index.json; npz load is lazy, so this is cheap
+                with np.load(self.root / entry["path"] / "meta.npz", allow_pickle=True) as meta:
+                    hw = [int(v) for v in meta["image_hw"]]
+                entry["image_hw"] = hw
+            by_shape.setdefault((hw[0], hw[1]), []).append(entry)
+
+        if image_hw is not None:
+            target = (int(image_hw[0]), int(image_hw[1]))
+            if target not in by_shape:
+                raise ValueError(
+                    f"no {split!r} scene stored at {target}; available: {sorted(by_shape)}"
+                )
+        else:
+            target = max(by_shape, key=lambda hw: len(by_shape[hw]))
+
+        if len(by_shape) > 1:
+            dropped = sorted((hw, len(v)) for hw, v in by_shape.items() if hw != target)
+            print(
+                f"[dl3dv] {split}: keeping {len(by_shape[target])} scenes at {target}; "
+                f"dropped {sum(n for _, n in dropped)} at mismatched sizes {dropped}"
+            )
+            self.scenes = by_shape[target]  # insertion order == original index order
+        return target
 
     # -- frame selection ---------------------------------------------------- #
 
@@ -229,6 +268,15 @@ def _resize_shape(height: int, width: int, resolution: int, patch_size: int) -> 
 
 def collate_scenes(batch: list[dict]) -> dict:
     """Stack scenes into (B, S, ...). Requires a uniform S and image size."""
+    shapes = {tuple(b["images"].shape) for b in batch}
+    if len(shapes) > 1:
+        ids = {tuple(b["images"].shape): b["scene_id"] for b in batch}
+        raise ValueError(
+            "cannot batch scenes with different image shapes: "
+            + ", ".join(f"{s} ({ids[s][:12]})" for s in sorted(shapes))
+            + " -- pass image_hw= to DL3DVDataset, or use batch_size=1"
+        )
+
     out = {}
     for key in batch[0]:
         if isinstance(batch[0][key], torch.Tensor):
