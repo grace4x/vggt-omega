@@ -6,9 +6,11 @@
 
 import torch
 import torch.nn as nn
+from torch.utils.checkpoint import checkpoint
 
 from vggt_omega.models.layers import Mlp, RopePositionEmbedding, SelfAttentionBlock
-from vggt_omega.models.layers.vision_transformer import DinoVisionTransformer
+from vggt_omega.models.layers.utils import named_apply
+from vggt_omega.models.layers.vision_transformer import DinoVisionTransformer, init_weights_vit
 
 
 _RESNET_MEAN = [0.485, 0.456, 0.406]
@@ -28,10 +30,14 @@ class Aggregator(nn.Module):
         num_register_tokens: int = 16,
         register_attention_block_indices: list[int] = [2, 6, 9, 14, 20],
         cached_layer_indices: tuple[int, ...] = (4, 11, 17, 23),
+        patch_embed_config: dict | None = None,
+        use_checkpoint: bool = False,
     ) -> None:
         super().__init__()
 
-        self.patch_embed = _build_patch_embed(patch_size=patch_size, embed_dim=embed_dim)
+        self.patch_embed = _build_patch_embed(
+            patch_size=patch_size, embed_dim=embed_dim, **(patch_embed_config or {})
+        )
         self.rope_embed = RopePositionEmbedding(
             embed_dim=embed_dim,
             num_heads=num_heads,
@@ -77,6 +83,7 @@ class Aggregator(nn.Module):
 
         self.depth = depth
         self.patch_size = patch_size
+        self.use_checkpoint = use_checkpoint
         self.cached_layer_indices = set(cached_layer_indices)
         self.camera_token = nn.Parameter(torch.empty(1, 2, 1, embed_dim))
         self.register_token = nn.Parameter(torch.empty(1, 2, num_register_tokens, embed_dim))
@@ -94,6 +101,12 @@ class Aggregator(nn.Module):
         self.init_weights()
 
     def init_weights(self) -> None:
+        # `LinearKMaskedBias` fills `bias_mask` with NaN as a must-initialise
+        # sentinel, and only `init_weights_vit` clears it. Inference restores the
+        # buffer from the checkpoint, so this only bites when training from
+        # scratch -- without it every forward pass returns NaN.
+        for blocks in (self.frame_blocks, self.inter_frame_blocks):
+            named_apply(init_weights_vit, blocks)
         nn.init.normal_(self.camera_token, std=1e-3)
         nn.init.normal_(self.register_token, std=1e-3)
 
@@ -164,8 +177,13 @@ class Aggregator(nn.Module):
         rope_sincos: tuple[torch.Tensor, torch.Tensor],
     ) -> tuple[torch.Tensor, torch.Tensor]:
         tokens = tokens.view(batch_size * num_frames, num_tokens, embed_dim)
-        tokens = self.frame_blocks[block_idx](tokens, rope_sincos)
+        tokens = self._run_block(self.frame_blocks[block_idx], tokens, rope_sincos)
         return tokens, tokens.view(batch_size, num_frames, num_tokens, embed_dim)
+
+    def _run_block(self, block: nn.Module, tokens: torch.Tensor, rope_sincos) -> torch.Tensor:
+        if self.use_checkpoint and self.training and torch.is_grad_enabled():
+            return checkpoint(block, tokens, rope_sincos, use_reentrant=False)
+        return block(tokens, rope_sincos)
 
     def _run_inter_frame_attention_block(
         self,
@@ -181,7 +199,7 @@ class Aggregator(nn.Module):
 
         if attention_type == "global":
             tokens = tokens.view(batch_size, num_frames * num_tokens, embed_dim)
-            tokens = self.inter_frame_blocks[block_idx](tokens, None)
+            tokens = self._run_block(self.inter_frame_blocks[block_idx], tokens, None)
             return tokens.view(batch_size, num_frames, num_tokens, embed_dim)
 
         if attention_type != "register":
@@ -199,7 +217,9 @@ class Aggregator(nn.Module):
             embed_dim,
         )
 
-        camera_and_register_tokens = self.inter_frame_blocks[block_idx](camera_and_register_tokens, None)
+        camera_and_register_tokens = self._run_block(
+            self.inter_frame_blocks[block_idx], camera_and_register_tokens, None
+        )
         tokens = torch.cat([camera_and_register_tokens, patch_tokens], dim=1)
 
         camera_and_register_tokens = tokens[:, : num_frames * patch_token_start].view(
@@ -217,8 +237,10 @@ class Aggregator(nn.Module):
         return torch.cat([camera_and_register_tokens, patch_tokens], dim=2)
 
 
-def _build_patch_embed(patch_size: int, embed_dim: int) -> DinoVisionTransformer:
-    model = DinoVisionTransformer(
+def _build_patch_embed(patch_size: int, embed_dim: int, **overrides) -> DinoVisionTransformer:
+    """Build the DINOv3 trunk. Defaults reproduce the released ViT-L/16 backbone;
+    `overrides` (see `Aggregator(patch_embed_config=...)`) select a smaller one."""
+    kwargs = dict(
         img_size=224,
         patch_size=patch_size,
         in_chans=3,
@@ -239,6 +261,8 @@ def _build_patch_embed(patch_size: int, embed_dim: int) -> DinoVisionTransformer
         n_storage_tokens=4,
         mask_k_bias=True,
     )
+    kwargs.update(overrides)
+    model = DinoVisionTransformer(**kwargs)
     model.init_weights()
     return model
 

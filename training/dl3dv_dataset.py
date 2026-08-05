@@ -50,6 +50,14 @@ class DL3DVDataset(Dataset):
         if not self.scenes:
             raise ValueError(f"no {split!r} scenes under {self.root}")
 
+        # Batching requires a uniform frame count, so drop scenes that cannot
+        # supply `num_frames` rather than silently returning a short sample.
+        short = [e for e in self.scenes if (e.get("num_frames") or 0) < num_frames]
+        if short:
+            self.scenes = [e for e in self.scenes if (e.get("num_frames") or 0) >= num_frames]
+            if not self.scenes:
+                raise ValueError(f"no {split!r} scene has {num_frames} frames")
+
         self.num_frames = num_frames
         self.resolution = resolution
         self.patch_size = patch_size

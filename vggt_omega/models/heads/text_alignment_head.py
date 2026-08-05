@@ -9,6 +9,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from vggt_omega.models.layers import SelfAttentionBlock
+from vggt_omega.models.layers.utils import named_apply
+from vggt_omega.models.layers.vision_transformer import init_weights_vit
 
 
 class TextAlignmentHead(nn.Module):
@@ -44,6 +46,11 @@ class TextAlignmentHead(nn.Module):
             nn.LayerNorm(dim_in // 2, eps=1e-5),
             nn.Linear(dim_in // 2, dim_in, bias=True),
         )
+        self.init_weights()
+
+    def init_weights(self) -> None:
+        # Clears the NaN `bias_mask` sentinel; see `Aggregator.init_weights`.
+        named_apply(init_weights_vit, self.readout_blocks)
 
     def forward(
         self,
