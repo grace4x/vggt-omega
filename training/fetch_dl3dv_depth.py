@@ -17,8 +17,8 @@ maps than they have images. We keep them all: COLMAP has poses for those frames
 too, so they become usable the moment the matching RGB is downloaded.
 
 Depth is already in the same scale as the scene's COLMAP reconstruction
-(median(da3 / sparse_depth) measured at 0.992-1.000 across frames), so
-`scene_scale` in `meta.npz` stays valid and nothing needs rescaling.
+(median(da3 / sparse_depth) measured at 0.992-1.000 across frames), so it drops
+straight into the loader's normalisation and nothing needs rescaling here.
 
 Sizes: source maps are ~2.07 MB each (e.g. 539x961 float32). Resized to the
 stored 224x384 and quantised they cost ~40 MB per scene, ~180 GB for all 4382

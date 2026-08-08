@@ -22,8 +22,9 @@ Depth comes from one of two sources, per scene:
   with no `depth_root` at all.
 
 `point_map` is derived from whichever depth is in play, so it is dense exactly
-when the depth is, and `scene_scale` is the median of that same depth -- so the
-target's median depth is 1 for every scene regardless of source.
+when the depth is, and `scene_scale` is the mean distance from the first camera to
+those same points -- so the target sits in the paper's unit space, with a mean
+point distance of 1, for every scene regardless of source.
 
 Sanity check:
 
@@ -242,9 +243,9 @@ class DL3DVDataset(Dataset):
         intrinsics[:, 0, :] *= sx
         intrinsics[:, 1, :] *= sy
 
-        # Sparse depth: project the tracked points into each selected frame. This
-        # runs even when dense depth is available, because `scene_scale` is defined
-        # off it (see below) and it is the fallback for scenes DA3 does not cover.
+        # Sparse depth: project the tracked points into each selected frame. This is
+        # the fallback for the scenes DA3 does not cover; where dense depth exists it
+        # replaces all of this, including the scale it is normalised by.
         frame_lookup = {int(f): k for k, f in enumerate(sel)}
         keep = np.isin(obs_frame, sel)
         obs_f = np.array([frame_lookup[int(f)] for f in obs_frame[keep]], dtype=np.int64)
@@ -284,16 +285,21 @@ class DL3DVDataset(Dataset):
             # point of dense GT is a point for every pixel.
             point_map = _unproject(depth, extrinsics, intrinsics)
 
-        # Scale normalisation: COLMAP scenes have arbitrary units, so put the median
-        # observed depth at 1. Do this *after* the relative transform.
+        # Scale normalisation: COLMAP scenes have arbitrary units, so put the scene
+        # into the paper's unit space -- the mean distance from the origin to the
+        # observed 3D points. Do this *after* the relative transform, since the
+        # origin it measures from is the first camera.
         #
-        # Keyed off whichever depth is being supervised, not always the sparse one.
-        # Sparse points sit on textured, mostly-distant structure, so the ratio of
-        # the two medians runs 0.36-1.02 across scenes -- normalising dense depth by
-        # the sparse median would leave the target's median varying ~3x scene to
-        # scene, whereas this pins it at 1 for every scene of either kind.
-        observed = depth[mask]
-        scene_scale = float(np.median(observed)) if observed.size else 1.0
+        # Keyed off whichever depth is being supervised, not always the sparse one,
+        # so the target's mean point distance is 1 for every scene of either kind.
+        #
+        # A mean of point distances, not a median of depths: a median collapses
+        # towards zero as soon as most valid pixels sit near the camera, and since
+        # this is a *divisor*, a near-zero value inflates the target by orders of
+        # magnitude. The mean is held up by the far points however bad the near
+        # tail is, which is the property that makes it safe here.
+        observed = np.linalg.norm(point_map[mask], axis=-1)
+        scene_scale = float(observed.mean()) if observed.size else 1.0
         if not np.isfinite(scene_scale) or scene_scale <= 1e-8:
             scene_scale = 1.0
 
@@ -422,7 +428,8 @@ if __name__ == "__main__":
             f"{sample['scene_id'][:12]}  {'dense ' if sample['dense_depth'] else 'sparse'}  "
             f"images={tuple(sample['images'].shape)}  "
             f"depth_valid={mask.float().mean().item() * 100:6.2f}%  "
-            f"depth[median]={sample['depth'][mask].median():.3f}  "
+            # The unit-space invariant: this is what scene_scale divides out.
+            f"|P|[mean]={sample['point_map'][mask].norm(dim=-1).mean():.3f}  "
             f"|point_map - unproject(depth)|max={err:.2e}  "
             f"fov_deg={[round(v, 1) for v in torch.rad2deg(sample['pose_enc'][0, 7:]).tolist()]}  "
             f"|t| max={sample['extrinsics'][:, :, 3].norm(dim=-1).max():.2f}"

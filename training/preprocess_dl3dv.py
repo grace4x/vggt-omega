@@ -32,13 +32,12 @@ Output:
     obs_point        (K,)      i32   -- index into points_xyz
     depth_stats      (N,3)     f32   -- per-frame sparse depth (p05, median, p95)
     covisibility     (N,N)     f16   -- IoU of shared point tracks
-    scene_scale      scalar    f32   -- median sparse depth over the scene
     subset, scene_id           str
 
 Depth supervision is sparse: rebuild it at load time by projecting `points_xyz`
 with the stored extrinsics/intrinsics (see `dl3dv_dataset.py`). Nothing here is
-scale-normalised -- `scene_scale` is provided so the training code can pick its
-own convention.
+scale-normalised, and no scale is stored: the training code picks its own
+convention and derives the factor from the frames a sample actually draws.
 
 Example:
 
@@ -368,8 +367,11 @@ def process_scene(task: dict) -> dict:
     points_err = points_err[used]
     obs_point = remap.astype(np.int32)
 
-    scene_scale = float(np.median(depth_stats[:, 1]))
-    if not np.isfinite(scene_scale) or scene_scale <= 0:
+    # Not a stored scale, a degeneracy check: a non-positive or non-finite median
+    # sparse depth means the reconstruction is unusable whatever convention the
+    # training code later normalises by.
+    median_depth = float(np.median(depth_stats[:, 1]))
+    if not np.isfinite(median_depth) or median_depth <= 0:
         return {"status": "skip", "reason": "bad_scale", "subset": subset, "scene": scene}
 
     np.savez(
@@ -384,7 +386,6 @@ def process_scene(task: dict) -> dict:
         obs_point=obs_point,
         depth_stats=depth_stats,
         covisibility=covisibility_matrix(track_sets),
-        scene_scale=np.float32(scene_scale),
         subset=np.array(subset),
         scene_id=np.array(scene),
     )
@@ -397,7 +398,6 @@ def process_scene(task: dict) -> dict:
         "num_points": int(points_xyz.shape[0]),
         "num_obs": int(obs_frame.size),
         "image_hw": [out_h, out_w],
-        "scene_scale": scene_scale,
     }
 
 
@@ -521,7 +521,6 @@ def main() -> int:
                     "num_frames": result.get("num_frames"),
                     "num_points": result.get("num_points"),
                     "image_hw": result.get("image_hw"),
-                    "scene_scale": result.get("scene_scale"),
                 }
             )
         else:

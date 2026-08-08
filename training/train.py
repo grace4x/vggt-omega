@@ -197,7 +197,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     p.add_argument("--weight-camera", type=float, default=5.0)
     p.add_argument("--weight-depth", type=float, default=1.0)
-    p.add_argument("--weight-point", type=float, default=1.0, help="L_point on unprojected depth")
+    p.add_argument("--weight-point", type=float, default=0.5, help="L_point on unprojected depth")
     p.add_argument("--weight-gradient", type=float, default=1.0,
                    help="the ||c*grad(e)|| sub-term; set 0 without --depth-root, where it is noise")
 

@@ -4,18 +4,21 @@ Follows the paper's objective (arXiv:2605.15195):
 
     L = w_cam * L_cam + w_depth * L_depth + w_point * L_point + w_match * L_match
 
-* **Camera** -- Huber on the 9D pose encoding, split into translation /
-  quaternion / FoV terms so they can be weighted separately. The quaternion term
-  resolves the double cover (q and -q are the same rotation) before comparing.
+* **Camera** -- L1 over the whole 9D pose encoding, as the paper specifies; it
+  uses L1 rather than the Huber of VGGT, having found it more stable. Translation,
+  quaternion and FoV are logged separately and can be re-weighted, but every
+  component counts the same by default. The quaternion term resolves the double
+  cover (q and -q are the same rotation) before comparing.
 
 * **Depth** and **Point map** share one shape, the uncertainty-weighted
   regression the `depth_conf` head exists for:
 
       || c ⊙ (1 + D^-1) ⊙ e ||  +  || c ⊙ ∇e ||  -  α Σ log c
 
-  with `e` the residual. `(1 + D^-1)` upweights near surfaces; the `∇e` term
-  supervises local structure, which needs dense GT to do anything -- it is why
-  the DA3 depth maps are worth fetching. `-α log c` stops the head from
+  with `e` the residual, taken relative to the scale of the ground truth as the
+  paper prescribes (see `_relative_scale`). `(1 + D^-1)` upweights near surfaces;
+  the `∇e` term supervises local structure, which needs dense GT to do anything --
+  it is why the DA3 depth maps are worth fetching. `-α log c` stops the head from
   discounting a pixel for free. `conf = 1 + exp(x)` with `proj_conf`
   zero-initialised, so training starts at conf ~= 1.05 and any down-weighting
   has to be earned.
@@ -53,29 +56,42 @@ def camera_loss(
     *,
     weight_translation: float = 1.0,
     weight_rotation: float = 1.0,
-    weight_fov: float = 0.5,
-    huber_delta: float = 0.1,
+    weight_fov: float = 1.0,
 ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
-    """Huber loss on the (T, quat, fov) encoding. Both tensors are (B, S, 9)."""
+    """`L_cam` from the paper: L1 on the (T, quat, fov) encoding, which the authors
+    found more stable than the Huber loss VGGT used. Both tensors are (B, S, 9).
+
+    The paper's L1 runs over the whole 9-vector, so at the default weights every
+    component counts the same and this is exactly `|pred - gt|.mean()`. The
+    `weight_*` knobs scale the three groups relative to each other; they leave the
+    per-element weighting inside a group alone, so a group's influence stays
+    proportional to how many components it has.
+    """
     if pred_pose_enc.shape != gt_pose_enc.shape:
         raise ValueError(f"shape mismatch: {pred_pose_enc.shape} vs {gt_pose_enc.shape}")
 
     pred = pred_pose_enc.float()
     gt = gt_pose_enc.float()
 
-    translation = F.huber_loss(pred[..., :3], gt[..., :3], delta=huber_delta, reduction="mean")
-
     # Quaternion double cover: q and -q are the same rotation, so align the sign
     # of the target to the prediction before measuring the difference. Without
     # this, half the targets pull the head in the wrong direction.
     pred_quat, gt_quat = pred[..., 3:7], gt[..., 3:7]
     sign = torch.where((pred_quat * gt_quat).sum(-1, keepdim=True) < 0, -1.0, 1.0)
-    rotation = F.huber_loss(pred_quat, gt_quat * sign, delta=huber_delta, reduction="mean")
+    gt = torch.cat([gt[..., :3], gt_quat * sign, gt[..., 7:]], dim=-1)
 
-    fov = F.huber_loss(pred[..., 7:], gt[..., 7:], delta=huber_delta, reduction="mean")
-
-    total = weight_translation * translation + weight_rotation * rotation + weight_fov * fov
-    return total, {"cam_trans": translation.detach(), "cam_rot": rotation.detach(), "cam_fov": fov.detach()}
+    error = (pred - gt).abs()
+    weights = torch.tensor(
+        [weight_translation] * 3 + [weight_rotation] * 4 + [weight_fov] * 2,
+        device=error.device,
+        dtype=error.dtype,
+    )
+    total = (error * weights).mean()
+    return total, {
+        "cam_trans": error[..., :3].mean().detach(),
+        "cam_rot": error[..., 3:7].mean().detach(),
+        "cam_fov": error[..., 7:].mean().detach(),
+    }
 
 
 # --------------------------------------------------------------------------- #
@@ -87,11 +103,33 @@ def _masked_mean(values: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     return (values * mask).sum() / mask.sum().clamp_min(1.0)
 
 
+def _relative_scale(magnitude: torch.Tensor, mask: torch.Tensor, eps: float) -> torch.Tensor:
+    """The target's own scale: mean `magnitude` over valid pixels, per batch element.
+
+    The paper measures the depth and point residuals relative to the scale of the
+    ground truth. That makes the objective indifferent to the units a target arrives
+    in, so one badly scaled sample -- a scene whose normalisation degenerated
+    upstream -- can no longer dominate a batch: the residual it produces is divided
+    by the same factor that inflated it.
+
+    Per batch element, because that is the granularity the ground truth is
+    normalised at (one scene, one scale). Detached: it describes the target, not
+    something to backpropagate through.
+
+    Returns (B, 1, 1, 1), shaped to divide a (B, S, H, W) map.
+    """
+    mask_f = mask.float()
+    total = torch.where(mask, magnitude, torch.zeros_like(magnitude)).flatten(1).sum(dim=1)
+    scale = (total / mask_f.flatten(1).sum(dim=1).clamp_min(1.0)).clamp_min(eps)
+    return scale.detach().reshape(-1, 1, 1, 1)
+
+
 def _uncertainty_loss(
     residual: torch.Tensor,
     conf: torch.Tensor,
     mask: torch.Tensor,
     weight: torch.Tensor,
+    scale: torch.Tensor,
     *,
     alpha: float,
     weight_gradient: float,
@@ -106,18 +144,27 @@ def _uncertainty_loss(
     off on sparse GT; its coverage does, which is what turns it from a structural
     constraint into a few noisy samples.
 
-    Returns (loss, per-pixel error magnitude) so the caller can log the raw error
-    separately from the confidence-weighted objective.
+    `scale` is the ground truth's own scale from `_relative_scale`, which every term
+    on the residual is measured against.
+
+    Returns (loss, per-pixel error magnitude). The error is left *unscaled*, so it
+    stays a plain distance in the target's units and a mis-scaled sample is still
+    visible in the logs even though it can no longer distort the objective.
     """
     mask_f = mask.float()
+    # Invalid pixels are masked out of every term below, but a non-finite target
+    # there would survive the multiplication as a NaN, so clear it first.
+    residual = torch.where(mask.unsqueeze(-1), residual, torch.zeros_like(residual))
     error = residual.norm(dim=-1)
-    loss = _masked_mean(conf * weight * error, mask_f)
+
+    relative = residual / scale.unsqueeze(-1)
+    loss = _masked_mean(conf * weight * relative.norm(dim=-1), mask_f)
 
     if weight_gradient > 0:
-        # W direction, then H. `residual` is (..., H, W, C); `conf`/`mask` (..., H, W).
-        d_w = residual[..., :, 1:, :] - residual[..., :, :-1, :]
+        # W direction, then H. `relative` is (..., H, W, C); `conf`/`mask` (..., H, W).
+        d_w = relative[..., :, 1:, :] - relative[..., :, :-1, :]
         valid_w = (mask[..., :, 1:] & mask[..., :, :-1]).float()
-        d_h = residual[..., 1:, :, :] - residual[..., :-1, :, :]
+        d_h = relative[..., 1:, :, :] - relative[..., :-1, :, :]
         valid_h = (mask[..., 1:, :] & mask[..., :-1, :]).float()
         grad = _masked_mean(conf[..., :, 1:] * d_w.norm(dim=-1), valid_w) + _masked_mean(
             conf[..., 1:, :] * d_h.norm(dim=-1), valid_h
@@ -148,6 +195,9 @@ def depth_loss(
     which drives `-alpha*log(conf)` below zero. `conf_max` caps that: without it,
     confidence grows without bound on pixels the model has memorised (an overfit
     run reaches conf ~800 in a few hundred steps) and eventually overflows.
+
+    The residual is measured relative to the mean ground-truth depth, so the value
+    does not depend on the units the target arrives in.
     """
     pred, conf, gt, mask = _prepare(pred_depth, pred_conf, gt_depth, mask, conf_max, eps)
     if not mask.any():
@@ -158,6 +208,7 @@ def depth_loss(
         conf,
         mask,
         1.0 + 1.0 / gt,  # (1 + D^-1): near surfaces matter more than far ones
+        _relative_scale(gt, mask, eps),
         alpha=alpha,
         weight_gradient=weight_gradient,
     )
@@ -184,17 +235,22 @@ def point_loss(
     camera's frame. `gt_depth` only supplies the `(1 + D^-1)` weighting, so the
     near/far emphasis matches `depth_loss` instead of keying off the reference
     frame's z axis, which is not a depth once the cameras move.
+
+    Its relative scale is the mean distance from the reference camera to the target
+    points, which is exactly the quantity the loader normalises each scene by.
     """
     _, conf, gt_z, mask = _prepare(gt_depth, pred_conf, gt_depth, mask, conf_max, eps)
     mask = mask & torch.isfinite(gt_points).all(dim=-1)
     if not mask.any():
         return _empty(pred_points, ("point_err",))
 
+    gt = gt_points.float()
     loss, error = _uncertainty_loss(
-        pred_points.float() - gt_points.float(),
+        pred_points.float() - gt,
         conf,
         mask,
         1.0 + 1.0 / gt_z,
+        _relative_scale(gt.norm(dim=-1), mask, eps),
         alpha=alpha,
         weight_gradient=weight_gradient,
     )
@@ -259,7 +315,8 @@ def _empty(reference: torch.Tensor, keys) -> tuple[torch.Tensor, dict[str, torch
 
 
 class VGGTOmegaLoss(nn.Module):
-    """`w_cam * L_cam + w_depth * L_depth + w_point * L_point`.
+    """`w_cam * L_cam + w_depth * L_depth + w_point * L_point`, defaulting to the
+    paper's weights of 5.0 / 1.0 / 0.5.
 
     Returns (loss, scalars-for-logging). `weight_gradient` is the `||c ⊙ ∇e||`
     sub-term inside both `L_depth` and `L_point`; leave it at 1.0 with dense GT and
@@ -271,7 +328,7 @@ class VGGTOmegaLoss(nn.Module):
         self,
         weight_camera: float = 5.0,
         weight_depth: float = 1.0,
-        weight_point: float = 1.0,
+        weight_point: float = 0.5,
         weight_gradient: float = 1.0,
         camera_kwargs: dict | None = None,
         depth_kwargs: dict | None = None,
@@ -447,6 +504,17 @@ if __name__ == "__main__":
         pairs = (m[..., 1:] & m[..., :-1]).float().mean().item()
         print(f"depth loss   flipped, {name}       {off:.4f} -> {on:.4f}   "
               f"grad {on - off:+.4f} over {pairs * 100:6.2f}% of pixel pairs")
+
+    # The failure this guards against: a scene whose normalisation degenerated
+    # upstream arrives orders of magnitude off, and used to drag the loss -- and the
+    # gradient -- with it. Measured against the target's own scale, a fixed 10%
+    # depth error costs about the same whatever units the target is in. What drift
+    # remains is the (1 + D^-1) weight, which the paper does not make scale free.
+    # The logged error is deliberately still raw, so the bad sample stays visible.
+    for k in (1.0, 1e3, 1e6):
+        value, parts = depth_loss(gt_depth * k * 1.1, conf, gt_depth * k, dense)
+        print(f"depth loss   10% off, GT x{k:<8.0e}{value.item():.4f}"
+              f"   raw err {parts['depth_err'].item():.2e}")
 
     # Unprojecting GT depth through the GT camera must reproduce the GT point map,
     # so L_point is at its floor exactly when depth and camera are both right.
