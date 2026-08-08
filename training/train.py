@@ -216,6 +216,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--resume", type=Path, default=None)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--overfit", type=int, default=0, help="train on N scenes only; loss should go to ~0")
+    p.add_argument("--scene-list", type=Path, default=None,
+                   help="train on only the `subset/scene` lines in this file (clustering/subset.py)")
     return p
 
 
@@ -262,6 +264,16 @@ def main() -> int:
         depth_root=args.depth_root,
         dense_only=args.dense_only,
     )
+    if args.scene_list is not None:
+        # After construction, so the dataset's own filters (dense_only, num_frames,
+        # image size) still apply -- a listed scene they drop stays dropped.
+        wanted = set(args.scene_list.read_text().split())
+        train_set.scenes = [e for e in train_set.scenes if f"{e['subset']}/{e['scene']}" in wanted]
+        if not train_set.scenes:
+            raise SystemExit(f"none of the {len(wanted)} scenes in {args.scene_list} survived the dataset filters")
+        if is_main(rank):
+            print(f"[scene-list] {len(train_set.scenes)}/{len(wanted)} listed scenes kept")
+
     if args.overfit:
         train_set.scenes = train_set.scenes[: args.overfit]
         train_set.seed = 0  # deterministic frame choice, so the target is fixed
