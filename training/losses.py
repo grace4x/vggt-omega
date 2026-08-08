@@ -196,6 +196,27 @@ def depth_loss(
     confidence grows without bound on pixels the model has memorised (an overfit
     run reaches conf ~800 in a few hundred steps) and eventually overflows.
 
+    **At the default `alpha` the confidence head saturates, deliberately.** Read
+    `alpha` against the *floor* on conf rather than against the error: `conf = 1 +
+    exp(x)` cannot go below 1, so once `alpha / err < 1` the per-pixel optimum sits
+    underneath the floor and the head parks there. That is a one-way door, because
+    `d(conf)/dx = exp(x)` vanishes as `x -> -inf`, so a head that saturates early
+    cannot recover later even after the error falls far enough to make `c* > 1`.
+
+    Measured on this objective, the coefficient on `c` -- `(1 + D^-1) * e_rel` plus
+    the gradient term, which is only ~10% of it -- is 0.75 early in training and
+    0.49 at convergence. So keeping `c*` above the floor at the *worst* moment needs
+    `alpha ~= 2.0`; 0.5 clears it at convergence and still saturates at step 600.
+
+    We keep 0.2 anyway. `conf` multiplies the depth residual, so raising alpha to 2.0
+    settles conf near 4 and quadruples the gradient reaching the depth head relative
+    to `5 * L_cam` -- and camera translation, not depth, is the accuracy bottleneck
+    (small-v3: RTA@5 0.129 against RRA@5 0.394). The cost of this choice is that
+    `depth_conf` is pinned at ~1.0 and is *not* a usable uncertainty output at
+    inference; the loss reduces to plain relative-L1 plus the gradient term, with
+    `-alpha*log(c)` a constant. Raise alpha to ~2.0 and drop `weight_depth` /
+    `weight_point` by ~4x together if you want the head live.
+
     The residual is measured relative to the mean ground-truth depth, so the value
     does not depend on the units the target arrives in.
     """

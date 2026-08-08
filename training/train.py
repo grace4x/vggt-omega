@@ -193,13 +193,21 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--warmup-steps", type=int, default=2000)
     p.add_argument("--max-steps", type=int, default=100_000)
     p.add_argument("--min-lr-ratio", type=float, default=0.01)
-    p.add_argument("--clip-grad", type=float, default=1.0)
+    # Observed gradient norms sit at 10-30 throughout training, so a clip of 1.0
+    # renormalises *every* step and the real step size becomes lr/grad_norm rather
+    # than lr. 10.0 leaves normal steps alone and only catches the genuine spikes
+    # (~180, twice in 38k steps on small-v3).
+    p.add_argument("--clip-grad", type=float, default=10.0)
 
     p.add_argument("--weight-camera", type=float, default=5.0)
     p.add_argument("--weight-depth", type=float, default=1.0)
     p.add_argument("--weight-point", type=float, default=0.5, help="L_point on unprojected depth")
     p.add_argument("--weight-gradient", type=float, default=1.0,
                    help="the ||c*grad(e)|| sub-term; set 0 without --depth-root, where it is noise")
+    p.add_argument("--conf-alpha", type=float, default=0.2,
+                   help="the -alpha*log(c) term in L_depth and L_point. Below ~2.0 the confidence "
+                        "head saturates at its floor of 1.0 and depth_conf is not a usable "
+                        "uncertainty output; see losses.depth_loss for why 0.2 is still the default")
 
     p.add_argument("--log-every", type=int, default=50)
     p.add_argument("--val-every", type=int, default=2000, help="0 disables validation")
@@ -240,6 +248,7 @@ def main() -> int:
         weight_depth=args.weight_depth,
         weight_point=args.weight_point,
         weight_gradient=args.weight_gradient,
+        depth_kwargs={"alpha": args.conf_alpha},
     )
 
     # ---- data ----

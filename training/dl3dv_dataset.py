@@ -45,6 +45,12 @@ from torch.utils.data import Dataset
 from training.fetch_dl3dv_depth import load_depth
 from vggt_omega.utils.pose_enc import extri_intri_to_pose_encoding
 
+# A point this many times further from the origin than the scene's median is not a
+# surface, it is a depth-estimator artefact -- sky, a specular highlight, a pixel DA3
+# gave up on. 100x is well outside anything a real indoor capture contains, so the
+# far tail that `scene_scale` legitimately depends on survives it untouched.
+SCALE_OUTLIER_FACTOR = 100.0
+
 
 class DL3DVDataset(Dataset):
     def __init__(
@@ -298,15 +304,45 @@ class DL3DVDataset(Dataset):
         # this is a *divisor*, a near-zero value inflates the target by orders of
         # magnitude. The mean is held up by the far points however bad the near
         # tail is, which is the property that makes it safe here.
-        observed = np.linalg.norm(point_map[mask], axis=-1)
-        scene_scale = float(observed.mean()) if observed.size else 1.0
+        #
+        # But a mean is only safe once the garbage is out of it. DA3 occasionally
+        # emits a handful of astronomical depths, and one 1e17 pixel takes the mean
+        # with it -- which divides every honest pixel down to ~0 and leaves the loss
+        # measuring its residual against a scale of ~0. That is where small-v3's two
+        # loss_depth spikes and its 1e14 depth_err readings both came from.
+        #
+        # So reject those pixels from `mask` as well as from the scale: a value we
+        # would not trust as a divisor is not one to supervise on either. Note this
+        # catches non-finite depth too -- an inf or nan in `depth` propagates through
+        # `_unproject` into `distance`, and a float32 overflow lands on inf, so the
+        # isfinite test covers values too large to have a norm at all.
+        distance = np.linalg.norm(point_map, axis=-1)
+        mask &= np.isfinite(distance) & (distance > 0)
+        if mask.any():
+            limit = float(np.median(distance[mask])) * SCALE_OUTLIER_FACTOR
+            if np.isfinite(limit) and limit > 0:
+                mask &= distance <= limit
+        kept = distance[mask].astype(np.float64)
+        scene_scale = float(kept.mean()) if kept.size else 1.0
         if not np.isfinite(scene_scale) or scene_scale <= 1e-8:
+            # Nothing survived, so there is no scale to speak of. Drop the dense
+            # targets rather than handing the loss unnormalised COLMAP units; the
+            # camera term still trains, on translations that are also unnormalised,
+            # which is why this is worth counting rather than silently absorbing.
             scene_scale = 1.0
+            mask[:] = False
 
         depth = depth / scene_scale
         point_map /= scene_scale
         points_first = points_first / scene_scale
         extrinsics[:, :, 3] /= scene_scale
+
+        # Nothing non-finite leaves the loader. The loss masks these pixels out
+        # regardless, but a surviving inf still overflows the *logged* raw error --
+        # small-v3 reported point_err = inf on 7 of its 380 windows for exactly this
+        # reason, which made the metric unreadable while the loss itself was fine.
+        depth = np.where(mask, depth, 0.0).astype(np.float32)
+        point_map = np.where(mask[..., None], point_map, 0.0).astype(np.float32)
 
         extrinsics_t = torch.from_numpy(extrinsics).float()
         intrinsics_t = torch.from_numpy(intrinsics).float()
@@ -323,6 +359,9 @@ class DL3DVDataset(Dataset):
             "depth_mask": torch.from_numpy(mask),
             "point_map": torch.from_numpy(point_map),
             "dense_depth": torch.tensor(dense_depth is not None),
+            # False when the scale normalisation found nothing to key off and the
+            # dense targets were dropped. Worth watching: it should be 0% of samples.
+            "scale_ok": torch.tensor(bool(mask.any())),
             "scene_scale": torch.tensor(scene_scale),
             "scene_id": entry["scene"],
         }
