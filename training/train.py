@@ -44,6 +44,7 @@ import torch
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader, DistributedSampler
+from torch.utils.tensorboard import SummaryWriter
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -169,6 +170,8 @@ def save_checkpoint(path: Path, model, optimizer, scheduler, step: int, args) ->
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--data-root", type=Path, required=True, help="output of preprocess_dl3dv.py")
+    p.add_argument("--depth-root", type=Path, default=None, help="output of fetch_dl3dv_depth.py (dense GT)")
+    p.add_argument("--dense-only", action="store_true", help="drop scenes with no dense depth (~12%)")
     p.add_argument("--out", type=Path, default=Path("runs/vggt-omega-small"))
 
     p.add_argument("--preset", default="small", choices=("small", "base", "large"))
@@ -194,7 +197,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     p.add_argument("--weight-camera", type=float, default=5.0)
     p.add_argument("--weight-depth", type=float, default=1.0)
-    p.add_argument("--weight-gradient", type=float, default=0.0, help="needs dense depth; useless on sparse GT")
+    p.add_argument("--weight-point", type=float, default=1.0, help="L_point on unprojected depth")
+    p.add_argument("--weight-gradient", type=float, default=1.0,
+                   help="the ||c*grad(e)|| sub-term; set 0 without --depth-root, where it is noise")
 
     p.add_argument("--log-every", type=int, default=50)
     p.add_argument("--val-every", type=int, default=2000, help="0 disables validation")
@@ -233,6 +238,7 @@ def main() -> int:
     criterion = VGGTOmegaLoss(
         weight_camera=args.weight_camera,
         weight_depth=args.weight_depth,
+        weight_point=args.weight_point,
         weight_gradient=args.weight_gradient,
     )
 
@@ -244,6 +250,8 @@ def main() -> int:
         resolution=args.resolution,
         sampling=args.sampling,
         augment=True,
+        depth_root=args.depth_root,
+        dense_only=args.dense_only,
     )
     if args.overfit:
         train_set.scenes = train_set.scenes[: args.overfit]
@@ -273,6 +281,8 @@ def main() -> int:
             sampling="covisibility",
             augment=False,
             seed=1234,  # fixed frame selection so val numbers are comparable across steps
+            depth_root=args.depth_root,
+            dense_only=args.dense_only,
         )
         val_loader = DataLoader(
             val_set,
@@ -308,9 +318,11 @@ def main() -> int:
             print(f"resumed from {args.resume} at step {start_step}")
 
     log_path = args.out / "log.jsonl"
+    writer = None
     if is_main(rank):
         args.out.mkdir(parents=True, exist_ok=True)
         (args.out / "args.json").write_text(json.dumps(vars(args), indent=1, default=str))
+        writer = SummaryWriter(log_dir=str(args.out / "tb"))
 
     # ---- loop ----
     ddp_model.train()
@@ -376,11 +388,17 @@ def main() -> int:
                 print(
                     f"step {step:>7d}/{args.max_steps}  loss {means.get('loss', 0):.4f}  "
                     f"cam {means.get('loss_camera', 0):.4f}  depth {means.get('loss_depth', 0):.4f}  "
+                    f"point {means.get('loss_point', 0):.4f}  cover {means.get('depth_valid', 0) * 100:.1f}%  "
                     f"lr {record['lr']:.2e}  {record['steps_per_sec']:.2f} it/s",
                     flush=True,
                 )
                 with log_path.open("a") as fh:
                     fh.write(json.dumps(record) + "\n")
+                if writer is not None:
+                    for k, v in record.items():
+                        if k == "step" or not isinstance(v, (int, float)):
+                            continue
+                        writer.add_scalar(f"train/{k}", v, step)
                 running, running_count, started = {}, 0, time.time()
 
             if val_loader is not None and args.val_every and step % args.val_every == 0:
@@ -395,6 +413,10 @@ def main() -> int:
                     )
                     with log_path.open("a") as fh:
                         fh.write(json.dumps({"step": step, "split": "val", **metrics}) + "\n")
+                    if writer is not None:
+                        for k, v in metrics.items():
+                            if isinstance(v, (int, float)) and math.isfinite(v):
+                                writer.add_scalar(f"val/{k}", v, step)
 
             if is_main(rank) and args.save_every and step % args.save_every == 0:
                 save_checkpoint(args.out / "latest.pt", ddp_model, optimizer, scheduler, step, args)
@@ -402,6 +424,8 @@ def main() -> int:
     if is_main(rank):
         save_checkpoint(args.out / "final.pt", ddp_model, optimizer, scheduler, step, args)
         print(f"done at step {step}; wrote {args.out / 'final.pt'}")
+        if writer is not None:
+            writer.close()
 
     if world_size > 1:
         dist.destroy_process_group()

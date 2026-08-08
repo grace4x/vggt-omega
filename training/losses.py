@@ -1,21 +1,31 @@
 """Training losses and eval metrics for VGGT-Omega.
 
-Two losses, matching the two heads the model actually has:
+Follows the paper's objective (arXiv:2605.15195):
+
+    L = w_cam * L_cam + w_depth * L_depth + w_point * L_point + w_match * L_match
 
 * **Camera** -- Huber on the 9D pose encoding, split into translation /
   quaternion / FoV terms so they can be weighted separately. The quaternion term
   resolves the double cover (q and -q are the same rotation) before comparing.
 
-* **Depth** -- the uncertainty-weighted regression the `depth_conf` head exists
-  for: `conf * err - alpha * log(conf)`. The model predicts `conf = 1 + exp(x)`
-  with `proj_conf` zero-initialised, so training starts at conf ~= 1.05 and the
-  network has to earn any down-weighting. Error is measured in log-depth, which
-  keeps near and far surfaces on comparable footing, and is Huberised because
-  COLMAP's sparse points carry occasional gross outliers.
+* **Depth** and **Point map** share one shape, the uncertainty-weighted
+  regression the `depth_conf` head exists for:
 
-`gradient_matching_loss` is included for when dense depth is available (MVS or a
-monocular teacher); it is a no-op on DL3DV's ~1%-coverage sparse maps and is off
-by default.
+      || c ⊙ (1 + D^-1) ⊙ e ||  +  || c ⊙ ∇e ||  -  α Σ log c
+
+  with `e` the residual. `(1 + D^-1)` upweights near surfaces; the `∇e` term
+  supervises local structure, which needs dense GT to do anything -- it is why
+  the DA3 depth maps are worth fetching. `-α log c` stops the head from
+  discounting a pixel for free. `conf = 1 + exp(x)` with `proj_conf`
+  zero-initialised, so training starts at conf ~= 1.05 and any down-weighting
+  has to be earned.
+
+* **Point map** is not a head: VGGT-Omega runs a single dense head and derives
+  point maps by unprojecting predicted depth through the predicted camera, so
+  `L_point` is what couples the depth and camera heads geometrically. The same
+  `depth_conf` serves as its confidence.
+
+`L_match` needs a tracking head, which this model does not have, so it is absent.
 
 Self-test on synthetic data:
 
@@ -28,6 +38,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from vggt_omega.utils.pose_enc import encoding_to_camera
 from vggt_omega.utils.rotation import quat_to_mat
 
 
@@ -68,8 +79,54 @@ def camera_loss(
 
 
 # --------------------------------------------------------------------------- #
-# depth
+# depth and point map
 # --------------------------------------------------------------------------- #
+
+
+def _masked_mean(values: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    return (values * mask).sum() / mask.sum().clamp_min(1.0)
+
+
+def _uncertainty_loss(
+    residual: torch.Tensor,
+    conf: torch.Tensor,
+    mask: torch.Tensor,
+    weight: torch.Tensor,
+    *,
+    alpha: float,
+    weight_gradient: float,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """`|| c ⊙ w ⊙ e || + || c ⊙ ∇e || - α Σ log c`, shared by depth and points.
+
+    `residual` is (B, S, H, W, C) -- C=1 for depth, C=3 for point maps -- so both
+    the norm and the spatial difference are taken on the vector rather than on its
+    magnitude. `∇` is a forward difference along W and along H; a pair contributes
+    only where both endpoints are valid -- ~100% of pairs on dense GT against ~0.01%
+    on a 1%-coverage sparse map. Being a masked mean, its *magnitude* does not fall
+    off on sparse GT; its coverage does, which is what turns it from a structural
+    constraint into a few noisy samples.
+
+    Returns (loss, per-pixel error magnitude) so the caller can log the raw error
+    separately from the confidence-weighted objective.
+    """
+    mask_f = mask.float()
+    error = residual.norm(dim=-1)
+    loss = _masked_mean(conf * weight * error, mask_f)
+
+    if weight_gradient > 0:
+        # W direction, then H. `residual` is (..., H, W, C); `conf`/`mask` (..., H, W).
+        d_w = residual[..., :, 1:, :] - residual[..., :, :-1, :]
+        valid_w = (mask[..., :, 1:] & mask[..., :, :-1]).float()
+        d_h = residual[..., 1:, :, :] - residual[..., :-1, :, :]
+        valid_h = (mask[..., 1:, :] & mask[..., :-1, :]).float()
+        grad = _masked_mean(conf[..., :, 1:] * d_w.norm(dim=-1), valid_w) + _masked_mean(
+            conf[..., 1:, :] * d_h.norm(dim=-1), valid_h
+        )
+        loss = loss + weight_gradient * grad
+
+    # The head may discount a pixel, but pays a log penalty for doing so, so it
+    # cannot drive the loss to zero for free.
+    return loss - alpha * _masked_mean(torch.log(conf), mask_f), error
 
 
 def depth_loss(
@@ -79,15 +136,12 @@ def depth_loss(
     mask: torch.Tensor,
     *,
     alpha: float = 0.2,
-    huber_delta: float = 0.5,
-    log_space: bool = True,
+    weight_gradient: float = 1.0,
     conf_max: float = 100.0,
     eps: float = 1e-6,
 ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
-    """Confidence-weighted depth regression over the valid pixels only.
-
-    `pred_depth` is (B, S, H, W) or (B, S, H, W, 1) as the dense head returns it;
-    `gt_depth` and `mask` are (B, S, H, W).
+    """`L_depth` from the paper. `pred_depth` is (B, S, H, W) or (B, S, H, W, 1) as
+    the dense head returns it; `gt_depth` and `mask` are (B, S, H, W).
 
     This is a negative log-likelihood, so the value is **expected to go negative**
     once the model fits well -- the optimum for a pixel is `conf = alpha / err`,
@@ -95,73 +149,108 @@ def depth_loss(
     confidence grows without bound on pixels the model has memorised (an overfit
     run reaches conf ~800 in a few hundred steps) and eventually overflows.
     """
+    pred, conf, gt, mask = _prepare(pred_depth, pred_conf, gt_depth, mask, conf_max, eps)
+    if not mask.any():
+        return _empty(pred, ("depth_err", "depth_conf", "depth_valid"))
+
+    loss, error = _uncertainty_loss(
+        (pred - gt).unsqueeze(-1),
+        conf,
+        mask,
+        1.0 + 1.0 / gt,  # (1 + D^-1): near surfaces matter more than far ones
+        alpha=alpha,
+        weight_gradient=weight_gradient,
+    )
+    return loss, {
+        "depth_err": _masked_mean(error, mask.float()).detach(),
+        "depth_conf": _masked_mean(conf, mask.float()).detach(),
+        "depth_valid": (mask.sum() / mask.numel()).detach(),
+    }
+
+
+def point_loss(
+    pred_points: torch.Tensor,
+    pred_conf: torch.Tensor,
+    gt_points: torch.Tensor,
+    gt_depth: torch.Tensor,
+    mask: torch.Tensor,
+    *,
+    alpha: float = 0.2,
+    weight_gradient: float = 1.0,
+    conf_max: float = 100.0,
+    eps: float = 1e-6,
+) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+    """`L_point`: the same objective on (B, S, H, W, 3) point maps in the reference
+    camera's frame. `gt_depth` only supplies the `(1 + D^-1)` weighting, so the
+    near/far emphasis matches `depth_loss` instead of keying off the reference
+    frame's z axis, which is not a depth once the cameras move.
+    """
+    _, conf, gt_z, mask = _prepare(gt_depth, pred_conf, gt_depth, mask, conf_max, eps)
+    mask = mask & torch.isfinite(gt_points).all(dim=-1)
+    if not mask.any():
+        return _empty(pred_points, ("point_err",))
+
+    loss, error = _uncertainty_loss(
+        pred_points.float() - gt_points.float(),
+        conf,
+        mask,
+        1.0 + 1.0 / gt_z,
+        alpha=alpha,
+        weight_gradient=weight_gradient,
+    )
+    return loss, {"point_err": _masked_mean(error, mask.float()).detach()}
+
+
+def unproject_depth(
+    depth: torch.Tensor, extrinsics: torch.Tensor, intrinsics: torch.Tensor
+) -> torch.Tensor:
+    """(B, S, H, W) depth -> (B, S, H, W, 3) points in the world frame.
+
+    `extrinsics` is (B, S, 3, 4) camera-from-world. Our batches put the world
+    frame at the first camera, so the result is directly comparable to the
+    `point_map` the loader builds. Differentiable in depth and in both cameras,
+    which is what makes `L_point` couple the two heads.
+    """
+    if depth.dim() == 5:
+        depth = depth.squeeze(-1)
+    B, S, H, W = depth.shape
+    y, x = torch.meshgrid(
+        torch.arange(H, device=depth.device, dtype=depth.dtype),
+        torch.arange(W, device=depth.device, dtype=depth.dtype),
+        indexing="ij",
+    )
+
+    fx = intrinsics[..., 0, 0][..., None, None]
+    fy = intrinsics[..., 1, 1][..., None, None]
+    cx = intrinsics[..., 0, 2][..., None, None]
+    cy = intrinsics[..., 1, 2][..., None, None]
+    cam = torch.stack([(x - cx) / fx * depth, (y - cy) / fy * depth, depth], dim=-1)
+
+    R = extrinsics[..., :3, :3]
+    t = extrinsics[..., :3, 3]
+    return torch.einsum("bsij,bshwj->bshwi", R.transpose(-1, -2), cam - t[:, :, None, None, :])
+
+
+def _prepare(pred_depth, pred_conf, gt_depth, mask, conf_max: float, eps: float):
+    """Squeeze the head's trailing axis, clamp confidence, and drop invalid GT.
+
+    `gt` is forced to 1 outside the mask so that the `1/gt` weighting cannot
+    produce a NaN that survives multiplication by a zero mask.
+    """
     if pred_depth.dim() == 5:
         pred_depth = pred_depth.squeeze(-1)
     if pred_conf.dim() == 5:
         pred_conf = pred_conf.squeeze(-1)
 
     mask = mask & torch.isfinite(gt_depth) & (gt_depth > eps)
-    num_valid = mask.sum()
-    if num_valid == 0:
-        zero = pred_depth.sum() * 0.0
-        return zero, {"depth_err": zero.detach(), "depth_conf": zero.detach(), "depth_valid": zero.detach()}
-
-    pred = pred_depth.float()[mask].clamp_min(eps)
-    gt = gt_depth.float()[mask].clamp_min(eps)
-    conf = pred_conf.float()[mask].clamp(max=conf_max)
-
-    residual = torch.log(pred) - torch.log(gt) if log_space else pred - gt
-    error = F.huber_loss(residual, torch.zeros_like(residual), delta=huber_delta, reduction="none")
-
-    # conf * err - alpha * log(conf): the head can discount a pixel, but pays
-    # a log penalty for doing so, so it cannot drive the loss to zero for free.
-    loss = (conf * error - alpha * torch.log(conf)).mean()
-
-    return loss, {
-        "depth_err": error.mean().detach(),
-        "depth_conf": conf.mean().detach(),
-        "depth_valid": (num_valid / mask.numel()).detach(),
-    }
+    gt = torch.where(mask, gt_depth.float(), torch.ones_like(gt_depth, dtype=torch.float32))
+    conf = pred_conf.float().clamp(min=eps, max=conf_max)
+    return pred_depth.float(), conf, gt, mask
 
 
-def gradient_matching_loss(
-    pred_depth: torch.Tensor,
-    gt_depth: torch.Tensor,
-    mask: torch.Tensor,
-    *,
-    num_scales: int = 4,
-    eps: float = 1e-6,
-) -> torch.Tensor:
-    """Multi-scale gradient matching on log depth. Only meaningful for dense GT --
-    a pixel contributes only where both it and its neighbour are valid, which on
-    sparse COLMAP depth is almost never."""
-    if pred_depth.dim() == 5:
-        pred_depth = pred_depth.squeeze(-1)
-
-    B, S, H, W = pred_depth.shape
-    pred = torch.log(pred_depth.float().clamp_min(eps)).reshape(B * S, 1, H, W)
-    gt = torch.log(gt_depth.float().clamp_min(eps)).reshape(B * S, 1, H, W)
-    valid = mask.reshape(B * S, 1, H, W).float()
-
-    total = pred.sum() * 0.0
-    scales_used = 0
-    for scale in range(num_scales):
-        step = 2**scale
-        if H <= step or W <= step:
-            break
-        scales_used += 1
-        for slice_a, slice_b in (
-            ((..., slice(None), slice(step, None)), (..., slice(None), slice(None, -step))),
-            ((..., slice(step, None), slice(None)), (..., slice(None, -step), slice(None))),
-        ):
-            # A pair contributes only when both of its endpoints are observed.
-            pair_valid = valid[slice_a] * valid[slice_b]
-            d_pred = pred[slice_a] - pred[slice_b]
-            d_gt = gt[slice_a] - gt[slice_b]
-            residual = (d_pred - d_gt).abs() * pair_valid
-            total = total + residual.sum() / pair_valid.sum().clamp_min(1.0)
-
-    return total / max(scales_used, 1)
+def _empty(reference: torch.Tensor, keys) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+    zero = reference.sum() * 0.0
+    return zero, {k: zero.detach() for k in keys}
 
 
 # --------------------------------------------------------------------------- #
@@ -170,19 +259,27 @@ def gradient_matching_loss(
 
 
 class VGGTOmegaLoss(nn.Module):
-    """Sums the camera and depth terms. Returns (loss, scalars-for-logging)."""
+    """`w_cam * L_cam + w_depth * L_depth + w_point * L_point`.
+
+    Returns (loss, scalars-for-logging). `weight_gradient` is the `||c ⊙ ∇e||`
+    sub-term inside both `L_depth` and `L_point`; leave it at 1.0 with dense GT and
+    set it to 0 for a sparse-only run, where no neighbouring pixel pair is ever
+    both-valid and the term just adds noise.
+    """
 
     def __init__(
         self,
         weight_camera: float = 5.0,
         weight_depth: float = 1.0,
-        weight_gradient: float = 0.0,
+        weight_point: float = 1.0,
+        weight_gradient: float = 1.0,
         camera_kwargs: dict | None = None,
         depth_kwargs: dict | None = None,
     ) -> None:
         super().__init__()
         self.weight_camera = weight_camera
         self.weight_depth = weight_depth
+        self.weight_point = weight_point
         self.weight_gradient = weight_gradient
         self.camera_kwargs = camera_kwargs or {}
         self.depth_kwargs = depth_kwargs or {}
@@ -191,6 +288,7 @@ class VGGTOmegaLoss(nn.Module):
         device = next(iter(predictions.values())).device
         total = torch.zeros((), device=device)
         logs: dict[str, torch.Tensor] = {}
+        depth_kwargs = {"weight_gradient": self.weight_gradient, **self.depth_kwargs}
 
         if "pose_enc" in predictions and self.weight_camera > 0:
             loss, parts = camera_loss(predictions["pose_enc"], batch["pose_enc"], **self.camera_kwargs)
@@ -204,16 +302,30 @@ class VGGTOmegaLoss(nn.Module):
                 predictions["depth_conf"],
                 batch["depth"],
                 batch["depth_mask"],
-                **self.depth_kwargs,
+                **depth_kwargs,
             )
             total = total + self.weight_depth * loss
             logs.update(parts)
             logs["loss_depth"] = loss.detach()
 
-            if self.weight_gradient > 0:
-                grad = gradient_matching_loss(predictions["depth"], batch["depth"], batch["depth_mask"])
-                total = total + self.weight_gradient * grad
-                logs["loss_grad"] = grad.detach()
+        # No point head: derive the point map from predicted depth and the
+        # predicted camera, which is what ties the two heads together.
+        if self.weight_point > 0 and {"depth", "pose_enc"} <= predictions.keys():
+            depth = predictions["depth"]
+            H, W = depth.shape[2:4]
+            extrinsics, intrinsics = encoding_to_camera(predictions["pose_enc"].float(), (H, W))
+            pred_points = unproject_depth(depth.float(), extrinsics, intrinsics)
+            loss, parts = point_loss(
+                pred_points,
+                predictions["depth_conf"],
+                batch["point_map"],
+                batch["depth"],
+                batch["depth_mask"],
+                **depth_kwargs,
+            )
+            total = total + self.weight_point * loss
+            logs.update(parts)
+            logs["loss_point"] = loss.detach()
 
         logs["loss"] = total.detach()
         return total, logs
@@ -313,28 +425,41 @@ if __name__ == "__main__":
     print(f"camera loss  noisy                {camera_loss(gt_pose + 0.1 * torch.randn_like(gt_pose), gt_pose)[0].item():.3e}")
 
     gt_depth = torch.rand(B, S, H, W) * 4 + 0.5
-    mask = torch.rand(B, S, H, W) < 0.01  # DL3DV-like sparsity
+    sparse = torch.rand(B, S, H, W) < 0.01  # DL3DV-without-DA3 sparsity
+    dense = torch.ones_like(sparse)
     conf = torch.full((B, S, H, W), 1.05)
     base = -0.2 * torch.log(torch.tensor(1.05))  # the conf penalty floor at conf=1.05
-    print(f"\ndepth loss   exact match          {depth_loss(gt_depth, conf, gt_depth, mask)[0].item():.4f}"
+    print(f"\ndepth loss   exact match          {depth_loss(gt_depth, conf, gt_depth, dense)[0].item():.4f}"
           f"   (floor from -alpha*log(conf) = {base.item():.4f})")
-    print(f"depth loss   2x too large         {depth_loss(gt_depth * 2, conf, gt_depth, mask)[0].item():.4f}")
-    print(f"depth loss   2x too small         {depth_loss(gt_depth / 2, conf, gt_depth, mask)[0].item():.4f}"
-          f"   <- log-space, so symmetric with the line above")
-    print(f"depth loss   empty mask           {depth_loss(gt_depth, conf, gt_depth, torch.zeros_like(mask))[0].item():.4f}")
+    print(f"depth loss   2x too large         {depth_loss(gt_depth * 2, conf, gt_depth, dense)[0].item():.4f}")
+    print(f"depth loss   2x too small         {depth_loss(gt_depth / 2, conf, gt_depth, dense)[0].item():.4f}")
+    print(f"depth loss   empty mask           {depth_loss(gt_depth, conf, gt_depth, torch.zeros_like(dense))[0].item():.4f}")
     high_conf = torch.full((B, S, H, W), 5.0)
-    print(f"depth loss   wrong + high conf    {depth_loss(gt_depth * 2, high_conf, gt_depth, mask)[0].item():.4f}"
+    print(f"depth loss   wrong + high conf    {depth_loss(gt_depth * 2, high_conf, gt_depth, dense)[0].item():.4f}"
           f"   <- penalised for being confidently wrong")
+    # What the dense GT actually buys. The grad term is a masked *mean*, so on
+    # sparse GT its magnitude does not shrink -- what collapses is how many pixel
+    # pairs it is averaged over, which is what makes it a structural constraint
+    # rather than a handful of noisy samples.
+    for name, m in (("dense ", dense), ("sparse", sparse)):
+        off = depth_loss(gt_depth.flip(-1), conf, gt_depth, m, weight_gradient=0.0)[0].item()
+        on = depth_loss(gt_depth.flip(-1), conf, gt_depth, m, weight_gradient=1.0)[0].item()
+        pairs = (m[..., 1:] & m[..., :-1]).float().mean().item()
+        print(f"depth loss   flipped, {name}       {off:.4f} -> {on:.4f}   "
+              f"grad {on - off:+.4f} over {pairs * 100:6.2f}% of pixel pairs")
 
-    dense = torch.ones_like(mask)
-    print(f"\ngradient loss  exact match        {gradient_matching_loss(gt_depth, gt_depth, dense).item():.4f}")
-    print(f"gradient loss  uniform 1.1x scale {gradient_matching_loss(gt_depth * 1.1, gt_depth, dense).item():.4f}"
-          f"   <- 0 by design: it only sees structure, not scale")
-    print(f"gradient loss  structure wrong    "
-          f"{gradient_matching_loss(gt_depth.flip(-1), gt_depth, dense).item():.4f}")
-    print(f"gradient loss  sparse mask        "
-          f"{gradient_matching_loss(gt_depth.flip(-1), gt_depth, mask).item():.4f}"
-          f"   <- near-useless at 1% coverage, hence weight_gradient=0")
+    # Unprojecting GT depth through the GT camera must reproduce the GT point map,
+    # so L_point is at its floor exactly when depth and camera are both right.
+    gt_ext, gt_int = encoding_to_camera(gt_pose, (H, W))
+    gt_points = unproject_depth(gt_depth, gt_ext, gt_int)
+    print(f"\npoint loss   exact match          "
+          f"{point_loss(gt_points, conf, gt_points, gt_depth, dense)[0].item():.4f}")
+    print(f"point loss   depth 2x too large   "
+          f"{point_loss(unproject_depth(gt_depth * 2, gt_ext, gt_int), conf, gt_points, gt_depth, dense)[0].item():.4f}")
+    wrong_ext, wrong_int = encoding_to_camera(gt_pose + 0.05 * torch.randn_like(gt_pose), (H, W))
+    print(f"point loss   camera perturbed     "
+          f"{point_loss(unproject_depth(gt_depth, wrong_ext, wrong_int), conf, gt_points, gt_depth, dense)[0].item():.4f}"
+          f"   <- depth is exact; only the camera is wrong")
 
     print("\npose metrics  exact  ", {k: round(v, 4) for k, v in pose_metrics(gt_pose, gt_pose).items()})
     noisy = gt_pose.clone()
@@ -342,4 +467,4 @@ if __name__ == "__main__":
     print("pose metrics  noisy  ", {k: round(v, 4) for k, v in pose_metrics(noisy, gt_pose).items()})
     print("pose metrics  flipped", {k: round(v, 4) for k, v in pose_metrics(flipped, gt_pose).items()},
           "  <- must match 'exact'")
-    print("depth metrics        ", {k: round(v, 4) for k, v in depth_metrics(gt_depth * 1.1, gt_depth, mask).items()})
+    print("depth metrics        ", {k: round(v, 4) for k, v in depth_metrics(gt_depth * 1.1, gt_depth, dense).items()})

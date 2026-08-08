@@ -7,14 +7,27 @@ worth of frames, shaped the way `VGGTOmega.forward` consumes them:
     extrinsics    (S, 3, 4)     camera-from-world, OpenCV, first camera = identity
     intrinsics    (S, 3, 3)     pinhole for (H, W)
     pose_enc      (S, 9)        target for `predictions["pose_enc"]`
-    depth         (S, H, W)     sparse GT depth, 0 where unknown
+    depth         (S, H, W)     GT depth, 0 where unknown
     depth_mask    (S, H, W)     bool, True where `depth` is valid
-    point_map     (S, H, W, 3)  the same points in the first camera's frame
+    point_map     (S, H, W, 3)  unprojection of `depth` into the first camera's frame
+    dense_depth   ()            bool, True if `depth` came from DA3 rather than COLMAP
     scene_scale   ()            divisor applied to translations and depths
+
+Depth comes from one of two sources, per scene:
+
+* **dense** -- the DA3-aligned maps fetched by `fetch_dl3dv_depth.py`, ~100%
+  coverage. Pass `depth_root=`; scenes flagged `has_depth` in `index.json` use it.
+* **sparse** -- COLMAP's tracked points projected into each frame, ~1% coverage.
+  The fallback for the ~12% of scenes with no upstream depth, and what you get
+  with no `depth_root` at all.
+
+`point_map` is derived from whichever depth is in play, so it is dense exactly
+when the depth is, and `scene_scale` is the median of that same depth -- so the
+target's median depth is 1 for every scene regardless of source.
 
 Sanity check:
 
-    python training/dl3dv_dataset.py --root ~/dl3dv-train --num-frames 8
+    python training/dl3dv_dataset.py --root ~/dl3dv-train --depth-root ~/dl3dv-depth
 """
 
 from __future__ import annotations
@@ -28,6 +41,7 @@ import torch
 from PIL import Image
 from torch.utils.data import Dataset
 
+from training.fetch_dl3dv_depth import load_depth
 from vggt_omega.utils.pose_enc import extri_intri_to_pose_encoding
 
 
@@ -44,12 +58,30 @@ class DL3DVDataset(Dataset):
         augment: bool = True,
         seed: int | None = None,
         image_hw: tuple[int, int] | None = None,
+        depth_root: str | Path | None = None,
+        dense_only: bool = False,
     ) -> None:
         self.root = Path(root)
+        self.depth_root = Path(depth_root) if depth_root is not None else None
         index = json.loads((self.root / "index.json").read_text())
         self.scenes = [e for e in index["scenes"] if e["split"] == split]
         if not self.scenes:
             raise ValueError(f"no {split!r} scenes under {self.root}")
+
+        # `dense_only` trades scenes for supervision density: the ~12% with no
+        # upstream depth would otherwise contribute ~1%-coverage frames, which the
+        # `∇e` term in the loss cannot use at all.
+        if self.depth_root is not None:
+            total = len(self.scenes)
+            dense = sum(1 for e in self.scenes if e.get("has_depth"))
+            if dense_only:
+                self.scenes = [e for e in self.scenes if e.get("has_depth")]
+                if not self.scenes:
+                    raise ValueError(f"no {split!r} scene has dense depth under {self.depth_root}")
+            print(
+                f"[dl3dv] {split}: {dense}/{total} scenes with dense depth"
+                + ("; dropped the rest" if dense_only else "; rest fall back to sparse")
+            )
 
         # Batching requires a uniform frame count, so drop scenes that cannot
         # supply `num_frames` rather than silently returning a short sample.
@@ -140,6 +172,30 @@ class DL3DVDataset(Dataset):
             chosen.append(int(rng.choices(candidates.tolist(), weights=weights.tolist(), k=1)[0]))
         return np.array(sorted(chosen))
 
+    # -- dense depth -------------------------------------------------------- #
+
+    def _load_dense_depth(self, entry, frame_names, sel, out_h: int, out_w: int):
+        """DA3 depth for the selected frames as (S, out_h, out_w), or None.
+
+        Stored at the scene's `meta.npz` resolution, so it needs resampling when
+        `resolution=` asked for something else. Nearest-neighbour: averaging across
+        a depth discontinuity invents a surface in front of both neighbours.
+        """
+        if self.depth_root is None or not entry.get("has_depth"):
+            return None
+        depth_dir = self.depth_root / entry["subset"] / entry["scene"]
+        if not (depth_dir / "meta.json").exists():
+            return None
+
+        stems = [Path(frame_names[i]).stem for i in sel]
+        depth = load_depth(depth_dir, stems)
+        src_h, src_w = depth.shape[-2:]
+        if (src_h, src_w) != (out_h, out_w):
+            yi = np.minimum((np.arange(out_h) * src_h) // out_h, src_h - 1)
+            xi = np.minimum((np.arange(out_w) * src_w) // out_w, src_w - 1)
+            depth = depth[:, yi][:, :, xi]
+        return np.ascontiguousarray(depth, dtype=np.float32)
+
     # -- main --------------------------------------------------------------- #
 
     def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
@@ -186,7 +242,9 @@ class DL3DVDataset(Dataset):
         intrinsics[:, 0, :] *= sx
         intrinsics[:, 1, :] *= sy
 
-        # Sparse depth: project the tracked points into each selected frame.
+        # Sparse depth: project the tracked points into each selected frame. This
+        # runs even when dense depth is available, because `scene_scale` is defined
+        # off it (see below) and it is the fallback for scenes DA3 does not cover.
         frame_lookup = {int(f): k for k, f in enumerate(sel)}
         keep = np.isin(obs_frame, sel)
         obs_f = np.array([frame_lookup[int(f)] for f in obs_frame[keep]], dtype=np.int64)
@@ -218,13 +276,28 @@ class DL3DVDataset(Dataset):
             point_map[f_i[order], v_i[order], u_i[order]] = xyz_first[valid][order]
             mask[f_i, v_i, u_i] = True
 
-        # Scale normalisation: COLMAP scenes have arbitrary units, so put the
-        # median observed depth at 1. Do this *after* the relative transform.
+        dense_depth = self._load_dense_depth(entry, frame_names, sel, out_h, out_w)
+        if dense_depth is not None:
+            depth = dense_depth
+            mask = depth > 0
+            # Unproject rather than reuse the sparse triangulated points: the whole
+            # point of dense GT is a point for every pixel.
+            point_map = _unproject(depth, extrinsics, intrinsics)
+
+        # Scale normalisation: COLMAP scenes have arbitrary units, so put the median
+        # observed depth at 1. Do this *after* the relative transform.
+        #
+        # Keyed off whichever depth is being supervised, not always the sparse one.
+        # Sparse points sit on textured, mostly-distant structure, so the ratio of
+        # the two medians runs 0.36-1.02 across scenes -- normalising dense depth by
+        # the sparse median would leave the target's median varying ~3x scene to
+        # scene, whereas this pins it at 1 for every scene of either kind.
         observed = depth[mask]
         scene_scale = float(np.median(observed)) if observed.size else 1.0
         if not np.isfinite(scene_scale) or scene_scale <= 1e-8:
             scene_scale = 1.0
-        depth /= scene_scale
+
+        depth = depth / scene_scale
         point_map /= scene_scale
         points_first = points_first / scene_scale
         extrinsics[:, :, 3] /= scene_scale
@@ -243,9 +316,31 @@ class DL3DVDataset(Dataset):
             "depth": torch.from_numpy(depth),
             "depth_mask": torch.from_numpy(mask),
             "point_map": torch.from_numpy(point_map),
+            "dense_depth": torch.tensor(dense_depth is not None),
             "scene_scale": torch.tensor(scene_scale),
             "scene_id": entry["scene"],
         }
+
+
+def _unproject(depth: np.ndarray, extrinsics: np.ndarray, intrinsics: np.ndarray) -> np.ndarray:
+    """(S, H, W) depth -> (S, H, W, 3) points in the world frame.
+
+    `extrinsics` is camera-from-world, and our world frame is the first selected
+    camera, so this is the target for `L_point`. Mirrors `losses.unproject_depth`,
+    which does the same thing to the model's prediction in torch.
+    """
+    S, H, W = depth.shape
+    y, x = np.meshgrid(np.arange(H, dtype=np.float64), np.arange(W, dtype=np.float64), indexing="ij")
+    fx = intrinsics[:, 0, 0][:, None, None]
+    fy = intrinsics[:, 1, 1][:, None, None]
+    cx = intrinsics[:, 0, 2][:, None, None]
+    cy = intrinsics[:, 1, 2][:, None, None]
+    cam = np.stack([(x - cx) / fx * depth, (y - cy) / fy * depth, depth], axis=-1)
+
+    R = extrinsics[:, :3, :3]
+    t = extrinsics[:, :3, 3]
+    points = np.einsum("sij,shwj->shwi", R.transpose(0, 2, 1), cam - t[:, None, None, :])
+    return np.ascontiguousarray(points, dtype=np.float32) * (depth[..., None] > 0)
 
 
 def _to_4x4(extrinsic: np.ndarray) -> np.ndarray:
@@ -291,6 +386,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", required=True)
+    parser.add_argument("--depth-root", default=None)
+    parser.add_argument("--dense-only", action="store_true")
     parser.add_argument("--split", default="train")
     parser.add_argument("--num-frames", type=int, default=8)
     parser.add_argument("--resolution", type=int, default=None)
@@ -298,16 +395,35 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     dataset = DL3DVDataset(
-        args.root, split=args.split, num_frames=args.num_frames, resolution=args.resolution, seed=0
+        args.root,
+        split=args.split,
+        num_frames=args.num_frames,
+        resolution=args.resolution,
+        depth_root=args.depth_root,
+        dense_only=args.dense_only,
+        seed=0,
     )
     print(f"{len(dataset)} {args.split} scenes")
     for i in range(min(args.n, len(dataset))):
         sample = dataset[i]
-        coverage = sample["depth_mask"].float().mean().item()
+        mask = sample["depth_mask"]
+        # The point map must be the unprojection of the depth, so re-deriving it
+        # from the GT camera has to land back on itself.
+        from training.losses import unproject_depth
+
+        check = unproject_depth(
+            sample["depth"][None], sample["extrinsics"][None], sample["intrinsics"][None]
+        )[0]
+        err = (check - sample["point_map"])[mask].norm(dim=-1).max().item() if mask.any() else 0.0
+        # Exact on dense scenes. On sparse ones the point map holds the exact
+        # triangulated point while the depth was written to a rounded pixel, so a
+        # sub-pixel disagreement here is the projection, not a bug.
         print(
-            f"{sample['scene_id'][:12]}  images={tuple(sample['images'].shape)}  "
-            f"depth_valid={coverage * 100:.2f}%  "
-            f"depth[median]={sample['depth'][sample['depth_mask']].median():.3f}  "
-            f"fov_deg={torch.rad2deg(sample['pose_enc'][0, 7:]).tolist()}  "
+            f"{sample['scene_id'][:12]}  {'dense ' if sample['dense_depth'] else 'sparse'}  "
+            f"images={tuple(sample['images'].shape)}  "
+            f"depth_valid={mask.float().mean().item() * 100:6.2f}%  "
+            f"depth[median]={sample['depth'][mask].median():.3f}  "
+            f"|point_map - unproject(depth)|max={err:.2e}  "
+            f"fov_deg={[round(v, 1) for v in torch.rad2deg(sample['pose_enc'][0, 7:]).tolist()]}  "
             f"|t| max={sample['extrinsics'][:, :, 3].norm(dim=-1).max():.2f}"
         )
