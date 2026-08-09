@@ -71,7 +71,11 @@ class DL3DVDataset(Dataset):
         self.root = Path(root)
         self.depth_root = Path(depth_root) if depth_root is not None else None
         index = json.loads((self.root / "index.json").read_text())
-        self.scenes = [e for e in index["scenes"] if e["split"] == split]
+        # `split="all"` ignores the train/val assignment `preprocess_dl3dv.py` made.
+        # A held-out set preprocessed on its own has no meaningful split -- every
+        # scene in it is evaluation data -- and `--val-frac 0` would otherwise leave
+        # `split="val"` empty.
+        self.scenes = [e for e in index["scenes"] if split == "all" or e["split"] == split]
         if not self.scenes:
             raise ValueError(f"no {split!r} scenes under {self.root}")
 

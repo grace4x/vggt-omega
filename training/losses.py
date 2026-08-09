@@ -415,11 +415,18 @@ class VGGTOmegaLoss(nn.Module):
 
 
 @torch.no_grad()
-def pose_metrics(pred_pose_enc: torch.Tensor, gt_pose_enc: torch.Tensor) -> dict[str, float]:
-    """Relative-pose errors over every frame pair, plus the AUC@30 that the VGGT
-    line of work reports. Inputs are (B, S, 9)."""
+def pose_pair_errors(
+    pred_pose_enc: torch.Tensor, gt_pose_enc: torch.Tensor
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Per-pair relative rotation and translation-direction errors, in degrees.
+
+    Inputs are (B, S, 9); both outputs are (B, S*(S-1)/2). Split out from
+    `pose_metrics` so an evaluation can pool the raw pairs across batches -- a
+    median or an AUC over per-batch summaries is not the same statistic as one
+    over every pair.
+    """
     pred, gt = pred_pose_enc.float(), gt_pose_enc.float()
-    B, S, _ = pred.shape
+    _, S, _ = pred.shape
 
     # `quat_to_mat` divides by the squared norm, so guard against an early-training
     # prediction that has collapsed towards zero.
@@ -441,10 +448,24 @@ def pose_metrics(pred_pose_enc: torch.Tensor, gt_pose_enc: torch.Tensor) -> dict
     tg = t_gt[:, j] - (rel_gt @ t_gt[:, i].unsqueeze(-1)).squeeze(-1)
     cos_t = F.cosine_similarity(tp, tg, dim=-1).clamp(-1.0, 1.0)
     translation_deg = torch.rad2deg(torch.acos(cos_t))
+    return rotation_deg, translation_deg
 
-    worst = torch.maximum(rotation_deg, translation_deg)
-    thresholds = torch.arange(1, 31, device=worst.device, dtype=worst.dtype)
-    accuracy = (worst.reshape(-1, 1) < thresholds.reshape(1, -1)).float().mean(0)
+
+@torch.no_grad()
+def pose_auc(rotation_deg: torch.Tensor, translation_deg: torch.Tensor, max_deg: int = 30) -> float:
+    """mAA@`max_deg`: accuracy of `max(rot, trans)` averaged over 1..max_deg degrees."""
+    worst = torch.maximum(rotation_deg, translation_deg).reshape(-1, 1)
+    thresholds = torch.arange(1, max_deg + 1, device=worst.device, dtype=worst.dtype)
+    return (worst < thresholds.reshape(1, -1)).float().mean().item()
+
+
+@torch.no_grad()
+def pose_metrics(pred_pose_enc: torch.Tensor, gt_pose_enc: torch.Tensor) -> dict[str, float]:
+    """Relative-pose errors over every frame pair, plus the AUC@30 that the VGGT
+    line of work reports. Inputs are (B, S, 9)."""
+    pred, gt = pred_pose_enc.float(), gt_pose_enc.float()
+    t_pred, t_gt = pred[..., :3], gt[..., :3]
+    rotation_deg, translation_deg = pose_pair_errors(pred, gt)
 
     return {
         "rot_err_deg_mean": rotation_deg.mean().item(),
@@ -454,7 +475,7 @@ def pose_metrics(pred_pose_enc: torch.Tensor, gt_pose_enc: torch.Tensor) -> dict
         "trans_err_abs_mean": (t_pred - t_gt).norm(dim=-1).mean().item(),
         "rra_at_5": (rotation_deg < 5).float().mean().item(),
         "rta_at_5": (translation_deg < 5).float().mean().item(),
-        "auc_at_30": accuracy.mean().item(),
+        "auc_at_30": pose_auc(rotation_deg, translation_deg),
         "fov_err_deg": torch.rad2deg((pred[..., 7:] - gt[..., 7:]).abs()).mean().item(),
     }
 
