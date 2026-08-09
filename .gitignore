@@ -12,6 +12,8 @@ runs/
 outputs/
 demo_outputs/
 checkpoints/
+clustering/*.npz
+clustering/*.npy
 skyseg.onnx
 skyseg.onnx.tmp
 *.pt

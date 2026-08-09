@@ -6,6 +6,11 @@ sparsified to a graph, partitioned by modularity. Two differences worth knowing:
 * `METHOD` picks Louvain (networkx, no extra deps) or Leiden (leidenalg). Same
   objective -- RBConfiguration is resolution-gamma modularity -- but Leiden's
   refinement step guarantees connected communities, which Louvain does not.
+* Each scene is now `extract_features.py`'s N_IMAGES CLS vectors, not one. The edge
+  weight between two scenes is the average of all N_IMAGES x N_IMAGES pairwise cosine
+  similarities between their sampled images, computed without an O(n^2) loop: that
+  average equals the dot product of the two scenes' (non-renormalized) centroids of
+  per-image unit vectors.
 
     ~/clustering-imgs/.venv/bin/python clustering/cluster.py
 
@@ -25,6 +30,7 @@ THUMB = 160       # contact-sheet thumbnail width, px
 HERE = Path(__file__).parent
 d = np.load(HERE / "dinov3_features.npz")
 cls, scenes, subsets, frames = d["cls"].astype(np.float32), d["scenes"], d["subsets"], d["frames"]
+n_images = int(d["n_images"])  # frames sampled per scene by extract_features.py
 
 # DL3DVDataset keeps a single stored (H, W) so scenes can stack into a batch, and
 # drops the rest. Clustering scenes it would never load only dilutes the samples
@@ -38,8 +44,9 @@ if not keep_scene.all():
           f"dropped {(~keep_scene).sum()} at mismatched sizes")
     cls, scenes, subsets, frames = cls[keep_scene], scenes[keep_scene], subsets[keep_scene], frames[keep_scene]
 
-X = cls / np.linalg.norm(cls, axis=1, keepdims=True)
-sim = X @ X.T
+X = cls / np.linalg.norm(cls, axis=-1, keepdims=True)  # normalize each sampled image's CLS vector
+centroid = X.mean(axis=1)                                # (N, dim); NOT re-normalized
+sim = centroid @ centroid.T  # == average of the n_images^2 pairwise cosine similarities per scene pair
 np.save(HERE / "cls_cosine.npy", sim)
 
 i, j = np.triu_indices(len(cls), 1)
@@ -76,6 +83,7 @@ order = [sorted(part, key=lambda n: -sim[n, sorted(part)].mean()) for part in pa
     "method": METHOD,
     "threshold": THRESH,
     "resolution": RESOLUTION,
+    "n_images": n_images,
     "num_scenes": len(cls),
     "clusters": [{
         "cluster": c,
@@ -87,9 +95,9 @@ order = [sorted(part, key=lambda n: -sim[n, sorted(part)].mean()) for part in pa
 
 # ---- contact sheet: thumbnails grouped by cluster ----
 (HERE / "thumbs").mkdir(exist_ok=True)
-for n, f in enumerate(frames):
+for n, fs in enumerate(frames):
     if not (t := HERE / f"thumbs/{n:04d}.jpg").exists():
-        im = Image.open(f).convert("RGB")
+        im = Image.open(fs[0]).convert("RGB")  # first of the scene's sampled frames
         im.resize((THUMB, round(THUMB * im.height / im.width))).save(t, quality=82)
 
 html = ["<style>body{background:#111;color:#ddd;font:13px system-ui;margin:0;padding:16px}"
