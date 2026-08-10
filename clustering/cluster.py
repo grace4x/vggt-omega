@@ -12,11 +12,12 @@ sparsified to a graph, partitioned by modularity. Two differences worth knowing:
   average equals the dot product of the two scenes' (non-renormalized) centroids of
   per-image unit vectors.
 
-    ~/clustering-imgs/.venv/bin/python clustering/cluster.py
+    ~/clustering-imgs/.venv/bin/python clustering/cluster.py [--out PATH]
 
 Writes `clusters.json` -- the cluster -> scene mapping the training-set sampler reads.
 """
 
+import argparse
 import json
 import numpy as np, networkx as nx
 from pathlib import Path
@@ -28,7 +29,12 @@ RESOLUTION = 2.0  # resolution; >1 penalizes merging, giving more/smaller cluste
 THUMB = 160       # contact-sheet thumbnail width, px
 
 HERE = Path(__file__).parent
-d = np.load(HERE / "dinov3_features_layered.npz")
+OUT = HERE / "clusters.json"  # cluster -> scene mapping the training-set sampler reads
+parser = argparse.ArgumentParser()
+parser.add_argument("--out", type=Path, default=OUT, metavar="PATH",
+                     help="path to write the cluster -> scene mapping (default: %(default)s)")
+OUT = parser.parse_args().out
+d = np.load(HERE / "6k_features.npz")
 cls, scenes, subsets, frames = d["cls"].astype(np.float32), d["scenes"], d["subsets"], d["frames"]
 n_images = int(d["n_images"])  # frames sampled per scene by extract_features.py
 
@@ -67,7 +73,6 @@ else:
     X = cls / np.linalg.norm(cls, axis=-1, keepdims=True)  # normalize each sampled image's CLS vector
 centroid = X.mean(axis=1)                                # (N, dim); NOT re-normalized
 sim = centroid @ centroid.T  # == average of the n_images^2 pairwise cosine similarities per scene pair
-np.save(HERE / "cls_cosine.npy", sim)
 
 i, j = np.triu_indices(len(cls), 1)
 w = sim[i, j]
@@ -90,16 +95,12 @@ else:
     raise ValueError(f"unknown METHOD {METHOD!r}")
 
 parts = sorted((set(c) for c in communities), key=len, reverse=True)
-labels = np.empty(len(cls), int)
-for c, part in enumerate(parts):
-    labels[list(part)] = c
-np.save(HERE / f"cls_{METHOD}_labels.npy", labels)
 
 # ---- cluster -> scene mapping, ordered by within-cluster cohesion ----
 # `order` puts the most-typical scene first, so a sampler that wants k scenes from
 # a cluster can take a prefix and get its centre rather than its fringe.
 order = [sorted(part, key=lambda n: -sim[n, sorted(part)].mean()) for part in parts]
-(HERE / "clusters.json").write_text(json.dumps({
+OUT.write_text(json.dumps({
     "method": METHOD,
     "threshold": THRESH,
     "resolution": RESOLUTION,
@@ -114,9 +115,13 @@ order = [sorted(part, key=lambda n: -sim[n, sorted(part)].mean()) for part in pa
 }, indent=1))
 
 # ---- contact sheet: thumbnails grouped by cluster ----
+# Named `{subset}_{scene}.jpg` -- the thumbs-dir layout get_cluster_loss_html.py reads. Keying on
+# the scene rather than its row index keeps the cache valid across runs, which the index does not:
+# any change to the subset or to the size filter above renumbers every row.
 (HERE / "thumbs").mkdir(exist_ok=True)
+thumb_names = [f"{subsets[n]}_{scenes[n]}.jpg" for n in range(len(frames))]
 for n, fs in enumerate(frames):
-    if not (t := HERE / f"thumbs/{n:04d}.jpg").exists():
+    if not (t := HERE / "thumbs" / thumb_names[n]).exists():
         im = Image.open(fs[0]).convert("RGB")  # first of the scene's sampled frames
         im.resize((THUMB, round(THUMB * im.height / im.width))).save(t, quality=82)
 
@@ -127,7 +132,7 @@ html = ["<style>body{background:#111;color:#ddd;font:13px system-ui;margin:0;pad
 for c, idx in enumerate(order):
     html.append(f"<h2>cluster {c} &mdash; n={len(idx)}, mean pairwise cos "
                 f"{sim[np.ix_(idx, idx)][np.triu_indices(len(idx), 1)].mean() if len(idx) > 1 else float('nan'):.3f}</h2><div>")
-    html += [f'<figure><img src="thumbs/{n:04d}.jpg" width={THUMB} loading=lazy>'
+    html += [f'<figure><img src="thumbs/{thumb_names[n]}" width={THUMB} loading=lazy>'
              f'<figcaption>{c}.{k} {subsets[n]}/{scenes[n][:10]}</figcaption></figure>' for k, n in enumerate(idx)]
     html.append("</div>")
 (HERE / "clusters.html").write_text("\n".join(html))
@@ -135,4 +140,4 @@ for c, idx in enumerate(order):
 print(f"cos sim: min {w.min():.3f} median {np.median(w):.3f} max {w.max():.3f}, {keep.sum()} edges")
 print(f"{len(parts)} clusters ({sum(len(p) > 1 for p in parts)} non-singleton), "
       f"sizes {[len(p) for p in parts][:10]}, modularity@1 {nx.community.modularity(G, parts, weight='weight'):.3f}")
-print("wrote clusters.json, clusters.html")
+print(f"wrote {OUT.name}, clusters.html")
