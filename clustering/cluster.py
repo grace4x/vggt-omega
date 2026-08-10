@@ -34,7 +34,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--out", type=Path, default=OUT, metavar="PATH",
                      help="path to write the cluster -> scene mapping (default: %(default)s)")
 OUT = parser.parse_args().out
-d = np.load(HERE / "6k_features.npz")
+d = np.load(HERE / "train_features_layers.npz")
 cls, scenes, subsets, frames = d["cls"].astype(np.float32), d["scenes"], d["subsets"], d["frames"]
 n_images = int(d["n_images"])  # frames sampled per scene by extract_features.py
 
@@ -135,9 +135,9 @@ for c, idx in enumerate(order):
     html += [f'<figure><img src="thumbs/{thumb_names[n]}" width={THUMB} loading=lazy>'
              f'<figcaption>{c}.{k} {subsets[n]}/{scenes[n][:10]}</figcaption></figure>' for k, n in enumerate(idx)]
     html.append("</div>")
-(HERE / "clusters.html").write_text("\n".join(html))
+(HERE / f"{OUT.name}.html").write_text("\n".join(html))
 
 print(f"cos sim: min {w.min():.3f} median {np.median(w):.3f} max {w.max():.3f}, {keep.sum()} edges")
 print(f"{len(parts)} clusters ({sum(len(p) > 1 for p in parts)} non-singleton), "
       f"sizes {[len(p) for p in parts][:10]}, modularity@1 {nx.community.modularity(G, parts, weight='weight'):.3f}")
-print(f"wrote {OUT.name}, clusters.html")
+print(f"wrote {OUT.name}.json, {OUT.name}.html")

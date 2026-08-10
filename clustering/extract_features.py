@@ -23,7 +23,7 @@ from transformers.image_utils import load_image
 
 # ---- inputs ----
 HERE = Path(__file__).parent
-DATA = Path("~/dl3dv-train").expanduser()  # preprocess_dl3dv.py output
+DATA = Path("~/dl3dv-eval").expanduser()  # preprocess_dl3dv.py output
 # This directory is a held-out set preprocessed on its own, so every scene in it
 # is eval data regardless of the train/val label `preprocess_dl3dv.py` assigned
 # (see the matching comment in `DL3DVDataset`) -- "all" here means "everything in
