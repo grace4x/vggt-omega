@@ -50,9 +50,9 @@ picked = [f"{s['subset']}/{s['scene']}" for c in clusters for s in c["scenes"][:
 if args.out is not None:
     out = args.out
 elif args.k is not None:
-    out = HERE / f"subset_k{args.k}_n4.txt"
+    out = HERE / f"subset_k{args.k}_n4_layered.txt"
 else:
-    out = HERE / f"subset_pct{args.pct:g}_n4.txt"
+    out = HERE / f"subset_pct{args.pct:g}_n4_layered.txt"
 
 out.write_text("\n".join(picked) + "\n")
 label = f"k={args.k}" if args.k is not None else f"pct={args.pct:g}%"

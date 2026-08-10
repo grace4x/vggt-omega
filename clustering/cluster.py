@@ -28,7 +28,7 @@ RESOLUTION = 2.0  # resolution; >1 penalizes merging, giving more/smaller cluste
 THUMB = 160       # contact-sheet thumbnail width, px
 
 HERE = Path(__file__).parent
-d = np.load(HERE / "dinov3_features.npz")
+d = np.load(HERE / "dinov3_features_layered.npz")
 cls, scenes, subsets, frames = d["cls"].astype(np.float32), d["scenes"], d["subsets"], d["frames"]
 n_images = int(d["n_images"])  # frames sampled per scene by extract_features.py
 
@@ -44,7 +44,27 @@ if not keep_scene.all():
           f"dropped {(~keep_scene).sum()} at mismatched sizes")
     cls, scenes, subsets, frames = cls[keep_scene], scenes[keep_scene], subsets[keep_scene], frames[keep_scene]
 
-X = cls / np.linalg.norm(cls, axis=-1, keepdims=True)  # normalize each sampled image's CLS vector
+n_layers = len(d["cls_layers"])
+if n_layers > 1:
+    # Each layer's CLS vector, after extract_features.py's per-layer L2-normalize, turns out to be
+    # ~90-99.6% (worse in earlier layers) a "DC" direction that's shared by every image regardless
+    # of content -- not scene signal. Averaged into the combined cosine similarity, that near-constant
+    # component drowns out the actual per-scene variation, collapsing sim into a narrow, uniformly-high
+    # band with nothing for modularity to partition on (hence all-singleton clusters). Subtract each
+    # layer's dataset-mean direction and re-normalize before combining layers, to strip that bias out.
+    # (Only done when combining multiple layers -- with a single layer there's no cross-layer
+    # averaging to dilute, so leave its DC component alone.)
+    layer_dims = cls.shape[-1] // n_layers
+    flat = cls.reshape(-1, cls.shape[-1])
+    X = np.empty_like(flat)
+    for k in range(n_layers):
+        seg = flat[:, k * layer_dims:(k + 1) * layer_dims]
+        seg = seg - seg.mean(axis=0)
+        X[:, k * layer_dims:(k + 1) * layer_dims] = seg / np.linalg.norm(seg, axis=-1, keepdims=True)
+    X = X.reshape(cls.shape)
+    X /= np.linalg.norm(X, axis=-1, keepdims=True)  # renormalize the full per-image vector to unit length
+else:
+    X = cls / np.linalg.norm(cls, axis=-1, keepdims=True)  # normalize each sampled image's CLS vector
 centroid = X.mean(axis=1)                                # (N, dim); NOT re-normalized
 sim = centroid @ centroid.T  # == average of the n_images^2 pairwise cosine similarities per scene pair
 np.save(HERE / "cls_cosine.npy", sim)
