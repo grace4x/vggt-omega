@@ -248,8 +248,9 @@ def main():
         print(f"warning: {unscored}/{len(scene_val)} scored scenes are absent from "
               f"{args.features.name} and do not appear on the sheet")
 
-    # Most-typical-first inside each cluster, mirroring cluster.py's cohesion ordering of the
-    # training scenes (which the json already stores in that order).
+    # Most-typical-first inside each cluster: the eval scenes that landed here, best match down.
+    # Note this no longer mirrors the training scenes' order in the json -- cluster.py now stores
+    # those least-typical-first -- so the two halves of a sheet row read in opposite directions.
     for a in assigned:
         a.sort(key=lambda s: -s["sim"])
 

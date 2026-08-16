@@ -1,8 +1,9 @@
 """Take a prefix of every cluster -- a small, maximally diverse training set.
 
-cluster.py orders each cluster by cohesion, so a prefix is the cluster's centre
-rather than its fringe. Taking k (or a percentage) from each gives
-one-scene-per-visual-mode coverage in a fraction of the data.
+cluster.py orders each cluster by ascending cohesion, so a prefix is the cluster's
+fringe -- its least-typical scenes -- rather than its centre. Taking k (or a
+percentage) from each gives one-scene-per-visual-mode coverage in a fraction of
+the data.
 
     python clustering/subset.py --k 5
     python clustering/subset.py --pct 10

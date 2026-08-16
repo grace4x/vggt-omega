@@ -76,10 +76,11 @@ sim = centroid @ centroid.T  # == average of the n_images^2 pairwise cosine simi
 
 i, j = np.triu_indices(len(cls), 1)
 w = sim[i, j]
-keep = (w >= np.quantile(w, THRESH)) & (w > 0)  # drop negatives: modularity's 2m needs one sign
+keep = w >= np.quantile(w, THRESH)
+ew = w[keep] + 1  # shift cos sim [-1,1] -> [0,2] so modularity sees one sign
 G = nx.Graph()
 G.add_nodes_from(range(len(cls)))
-G.add_weighted_edges_from(zip(i[keep], j[keep], w[keep]))
+G.add_weighted_edges_from(zip(i[keep], j[keep], ew))
 
 if METHOD == "louvain":
     communities = nx.community.louvain_communities(G, weight="weight", resolution=RESOLUTION, seed=0)
@@ -87,7 +88,7 @@ elif METHOD == "leiden":
     import igraph as ig, leidenalg
 
     g = ig.Graph(n=len(cls), edges=list(zip(i[keep].tolist(), j[keep].tolist())),
-                 edge_attrs={"weight": w[keep].tolist()})
+                 edge_attrs={"weight": ew.tolist()})
     communities = leidenalg.find_partition(g, leidenalg.RBConfigurationVertexPartition,
                                            weights="weight", resolution_parameter=RESOLUTION,
                                            seed=0)
@@ -97,9 +98,20 @@ else:
 parts = sorted((set(c) for c in communities), key=len, reverse=True)
 
 # ---- cluster -> scene mapping, ordered by within-cluster cohesion ----
-# `order` puts the most-typical scene first, so a sampler that wants k scenes from
-# a cluster can take a prefix and get its centre rather than its fringe.
-order = [sorted(part, key=lambda n: -sim[n, sorted(part)].mean()) for part in parts]
+# Score each scene by its mean similarity to the OTHER members of its cluster, ascending,
+# so `order` puts the LEAST-typical scene first: a sampler that wants k scenes from a
+# cluster takes a prefix and gets its fringe -- the outliers/hard cases -- rather than its
+# centre. (Negate `score` for most-typical-first.) The diagonal is excluded because
+# sim[n, n] is the mean pairwise cosine among scene n's own sampled frames, not a distance
+# to anything in the cluster; leaving it in would rank internally inconsistent scenes --
+# big camera motion, scene cuts, exposure swings -- as fringe wherever they actually sit.
+order = []
+for part in parts:
+    m = sorted(part)
+    s = sim[np.ix_(m, m)].copy()
+    np.fill_diagonal(s, 0.0)
+    score = s.sum(1) / max(len(m) - 1, 1)  # max(): a singleton cluster has no other members
+    order.append([m[k] for k in np.argsort(score, kind="stable")])
 OUT.write_text(json.dumps({
     "method": METHOD,
     "threshold": THRESH,
