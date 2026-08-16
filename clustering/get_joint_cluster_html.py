@@ -98,9 +98,9 @@ def partition(sim, method, threshold, resolution, seed):
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--features", type=Path, default=HERE / "6k_features_layers.npz",
+    ap.add_argument("--features", type=Path, default=HERE / "6k_features.npz",
                     help="eval-set features from extract_features.py")
-    ap.add_argument("--train-features", type=Path, default=HERE / "train_features_layers.npz",
+    ap.add_argument("--train-features", type=Path, default=HERE / "train_features.npz",
                     help="training-set features")
     ap.add_argument("--eval", type=Path,
                     default=HERE.parent / "runs/small-v5_default/eval/windows-small-v5-latest.jsonl",

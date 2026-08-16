@@ -23,14 +23,14 @@ from transformers.image_utils import load_image
 
 # ---- inputs ----
 HERE = Path(__file__).parent
-DATA = Path("~/dl3dv-eval").expanduser()  # preprocess_dl3dv.py output
+DATA = Path("~/dl3dv-train").expanduser()  # preprocess_dl3dv.py output
 # This directory is a held-out set preprocessed on its own, so every scene in it
 # is eval data regardless of the train/val label `preprocess_dl3dv.py` assigned
 # (see the matching comment in `DL3DVDataset`) -- "all" here means "everything in
 # this index", not the training split.
 SPLIT = "train"
 MODEL = "facebook/dinov3-vit7b16-pretrain-lvd1689m"
-OUT = HERE / "6k_features_layers.npz"
+OUT = HERE / "train_features.npz"
 H, W = 224, 384  # frames are stored 384x224 by preprocess_dl3dv.py; already a multiple of 16
 # Frames embedded per scene: cluster.py averages their pairwise cosine similarities into
 # a single edge weight per scene pair, so a bigger N_IMAGES gives smoother/more robust

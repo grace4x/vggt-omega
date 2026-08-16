@@ -32,6 +32,40 @@ n = 993 eval scenes for every row.
 
 Leiden slopes are weakly negative and miss p = 0.05. Nearest and k-means are flat. Moving from the least- to most-typical scene shifts predicted Leiden `loss_depth` by only ~0.10 against a 0.13–2.60 range.
 
+## No-layers features (`6k_features.npz`)
+
+Same 993 eval scenes, `loss_depth`, but clustered in the single-layer feature space. Sheets: `6k_features_joint_loss_depth.html` (Leiden, resolution 1.1, 285 joint clusters / 149 with eval), `6k_features_joint_kmeans_k100_loss_depth.html` (k=100, 90 with eval).
+
+| Sheet | Slope | Intercept | Pearson r | R² | Spearman ρ | p (slope) |
+|---|---|---|---|---|---|---|
+| Leiden joint · `loss_depth` | −0.114 | 0.516 | −0.052 | 0.27% | −0.101 | 0.10 |
+| k-means joint · `loss_depth` | −0.118 | 0.517 | −0.064 | 0.41% | −0.073 | 0.043 |
+
+K-means no-layers is the only scene-level slope that clears p = 0.05, but R² is still 0.4%. Predicted `loss_depth` from least- to most-typical k-means scene: 0.505 → 0.425. Dropping the top 2% of losses leaves r = −0.060.
+
+Cluster-level (n_eval ≥ 3): Leiden typ_mean vs loss_mean r = −0.080; k-means r = −0.144. Still small.
+
+## Train density / ring hypothesis
+
+Does eval loss dip in D5–D6 because that is where the training set is dense — i.e. clusters are shells, not balls?
+
+**Not really, except as a weak bin-level coincidence on no-layers Leiden.**
+
+Train typicality is a unimodal hump around the cluster cohesion (≈0.25–0.35), which is what you expect in high-D: almost all mass sits in a thin shell of similar typicality, with a few more-central points and a fringe tail. That shell is *not* specifically D5–D6 of the eval deciles.
+
+| Sheet | Train share in eval D5 / D6 | Where train actually piles | Pearson(n_train in eval-decile, eval mean loss) |
+|---|---|---|---|
+| layers Leiden | 12.1% / **7.9%** (D6 is *sparse*) | equal-width peak 0.26–0.30 (25% of train) | −0.34 |
+| layers k-means | 8.3% / 7.9% | **D10** 15.7% (near centroid) | −0.07 |
+| no-layers Leiden | 11.7% / 9.1%; denser in **D7–D9** | equal-width peak 0.29–0.34 (26%) | −0.73 |
+| no-layers k-means | 10.1% / 10.9%; densest in **D10** 14.1% | equal-width peak 0.22–0.32 | −0.56 |
+
+Scene-level checks kill the density→loss story: for each eval scene, count training scenes within ±0.03 typicality (global or same-cluster). Pearson vs `loss_depth` is between **−0.06 and +0.07** on all four sheets.
+
+Ring vs core, per cluster (train, n≥10): fraction of train in the top 10% of that cluster's typicality *range* is 0.08–0.10 (uniform-in-range would be 0.10; a dense core would be ≫0.10; a hollow center ≪0.10). `(max − median) / range` is ~0.4–0.5, so the median member is mid-range — compatible with a high-D shell, not with a filled ball piled on the centroid. K-means still puts extra train mass at high typicality (near the spherical centroid); Leiden no-layers is the most shell-like: eval D10 (most typical) has only 8.8% of train and mean loss bounces back to 0.50 from ~0.44 in D8.
+
+So: clusters look more like **high-D shells than dense cores**, but that does not explain the D5–D6 loss wiggle. Local train density at an eval scene is uncorrelated with its loss.
+
 ## Mean loss by typicality decile
 
 Equal-count bins of typicality (D1 = least typical, ~99 scenes each). If fringe scenes were harder, these would fall left-to-right. They wobble around the overall mean instead.
