@@ -193,11 +193,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--warmup-steps", type=int, default=2000)
     p.add_argument("--max-steps", type=int, default=100_000)
     p.add_argument("--min-lr-ratio", type=float, default=0.01)
-    # Observed gradient norms sit at 10-30 throughout training, so a clip of 1.0
-    # renormalises *every* step and the real step size becomes lr/grad_norm rather
-    # than lr. 10.0 leaves normal steps alone and only catches the genuine spikes
-    # (~180, twice in 38k steps on small-v3).
-    p.add_argument("--clip-grad", type=float, default=10.0)
+    # After warmup, pre-clip grad norms sit at ~11 (p99 ~17, max ~20 on
+    # small-v15). A clip of 1.0 renormalises every step; 10.0 still rescales the
+    # typical ~11-norm update and heavily cuts warmup (norms 13-31). 50.0 leaves
+    # both alone and only catches genuine spikes (~180, twice in 38k steps on
+    # small-v3).
+    p.add_argument("--clip-grad", type=float, default=50.0)
 
     p.add_argument("--weight-camera", type=float, default=5.0)
     p.add_argument("--weight-depth", type=float, default=1.0)
