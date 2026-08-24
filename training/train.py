@@ -1,11 +1,35 @@
 #!/usr/bin/env python3
-"""Train VGGT-Omega from scratch on preprocessed DL3DV.
+"""Train VGGT-Omega from scratch on preprocessed DL3DV and/or ScanNet v2.
 
 Single GPU:
 
     python training/train.py --data-root ~/dl3dv-train --preset small \
         --dinov3 checkpoints/dinov3_vits16.pt --out runs/small \
         --num-frames 16 --max-steps 100000 --checkpointing
+
+Both datasets at once (see `mixed_dataset.py`):
+
+    python training/train.py \
+        --data-root ~/dl3dv-train --depth-root ~/dl3dv-depth \
+        --scannet-root ~/scannet-train \
+        --dl3dv-weight 1 --scannet-weight 1 --preset small --out runs/mixed
+
+At 1/1 the mix is proportional to scene count, so DL3DV's ~4900 train scenes
+dominate ScanNet's ~1500. There are two ways to even that out, and they are not
+the same experiment:
+
+    --scannet-weight 3      ScanNet's 1500 scenes are each seen 3x per epoch
+    --dl3dv-scenes 1500     the first 1500 DL3DV scenes, the rest never seen
+
+The first keeps all the data and repeats the smaller set; the second keeps the
+step count per scene equal and throws data away. Prefer the first unless the
+point is to hold DL3DV's *diversity* down. `--dl3dv-weight 0.5` is a third
+option, but it picks its half at random under --seed rather than taking a
+prefix, so it is not reproducible across a --seed change.
+
+Loss and val metrics are reported per dataset as well as pooled. Both sets must
+be preprocessed at the same resolution, since a batch spanning two shapes cannot
+be stacked -- see `assert_stackable` in `mixed_dataset.py`.
 
 Multi GPU:
 
@@ -48,7 +72,13 @@ from torch.utils.tensorboard import SummaryWriter
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from training.dl3dv_dataset import DL3DVDataset, collate_scenes  # noqa: E402
+from training.dl3dv_dataset import DL3DVDataset  # noqa: E402
+from training.mixed_dataset import (  # noqa: E402
+    TaggedDataset,
+    assert_stackable,
+    build_concat_trainset,
+    collate_mixed,
+)
 from training.losses import VGGTOmegaLoss, depth_metrics, pose_metrics  # noqa: E402
 from training.model_config import build_model, parameter_summary  # noqa: E402
 
@@ -147,6 +177,32 @@ def evaluate(model, loader, criterion, device, max_batches: int) -> dict[str, fl
     return {k: v / max(count, 1) for k, v in totals.items()}
 
 
+def evaluate_all(model, loaders: dict, criterion, device, max_batches: int) -> dict[str, float]:
+    """`evaluate` per dataset, flattened to `<name>/<metric>` plus a plain mean.
+
+    Kept separate rather than pooled because the two datasets have genuinely
+    different depth: ScanNet's is a metric sensor at ~95% coverage, DL3DV's is
+    estimated. A single averaged abs_rel would hide one regressing while the
+    other improves.
+    """
+    out: dict[str, float] = {}
+    per_dataset = {}
+    for name, loader in loaders.items():
+        metrics = evaluate(model, loader, criterion, device, max_batches)
+        per_dataset[name] = metrics
+        for k, v in metrics.items():
+            out[f"{name}/{k}"] = v
+    if len(per_dataset) > 1:
+        keys = set().union(*(m.keys() for m in per_dataset.values()))
+        for k in keys:
+            values = [m[k] for m in per_dataset.values() if k in m and math.isfinite(m[k])]
+            if values:
+                out[k] = sum(values) / len(values)
+    elif per_dataset:
+        out.update(next(iter(per_dataset.values())))
+    return out
+
+
 def save_checkpoint(path: Path, model, optimizer, scheduler, step: int, args) -> None:
     raw = model.module if isinstance(model, DistributedDataParallel) else model
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -169,9 +225,17 @@ def save_checkpoint(path: Path, model, optimizer, scheduler, step: int, args) ->
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--data-root", type=Path, required=True, help="output of preprocess_dl3dv.py")
+    p.add_argument("--data-root", type=Path, default=None, help="output of preprocess_dl3dv.py")
     p.add_argument("--depth-root", type=Path, default=None, help="output of fetch_dl3dv_depth.py (dense GT)")
-    p.add_argument("--dense-only", action="store_true", help="drop scenes with no dense depth (~12%)")
+    p.add_argument("--scannet-root", type=Path, default=None, help="output of preprocess_scannet.py")
+    p.add_argument("--scannet-depth-root", type=Path, default=None,
+                   help="dense ScanNet depth; defaults to <scannet-root>/depth")
+    p.add_argument("--dl3dv-weight", type=float, default=1.0,
+                   help="times each DL3DV scene is listed per epoch (1.0 = once)")
+    p.add_argument("--scannet-weight", type=float, default=1.0,
+                   help="times each ScanNet scene is listed per epoch. At 1/1 the mix is simply\n"
+                        "proportional to scene count; raise this to give the smaller set more weight")
+    p.add_argument("--dense-only", action="store_true", help="drop scenes with no dense depth (~12%%)")
     p.add_argument("--out", type=Path, default=Path("runs/vggt-omega-small"))
 
     p.add_argument("--preset", default="small", choices=("small", "base", "large"))
@@ -219,6 +283,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--overfit", type=int, default=0, help="train on N scenes only; loss should go to ~0")
     p.add_argument("--scene-list", type=Path, default=None,
                    help="train on only the `subset/scene` lines in this file (clustering/subset.py)")
+    p.add_argument("--dl3dv-scenes", type=int, default=0,
+                   help="train on only the first N DL3DV scenes (0 = all). The index order is\n"
+                        "arbitrary, so this is a sample, not a filter -- but note it is a prefix,\n"
+                        "so N < 976 stays inside the 1K subset")
+    p.add_argument("--scannet-scenes", type=int, default=0, help="cap ScanNet at N train scenes (0 = all)")
     return p
 
 
@@ -255,30 +324,84 @@ def main() -> int:
     )
 
     # ---- data ----
-    train_set = DL3DVDataset(
-        args.data_root,
-        split="train",
-        num_frames=args.num_frames,
-        resolution=args.resolution,
-        sampling=args.sampling,
-        augment=True,
-        depth_root=args.depth_root,
-        dense_only=args.dense_only,
-    )
-    if args.scene_list is not None:
-        # After construction, so the dataset's own filters (dense_only, num_frames,
-        # image size) still apply -- a listed scene they drop stays dropped.
-        wanted = set(args.scene_list.read_text().split())
-        train_set.scenes = [e for e in train_set.scenes if f"{e['subset']}/{e['scene']}" in wanted]
-        if not train_set.scenes:
-            raise SystemExit(f"none of the {len(wanted)} scenes in {args.scene_list} survived the dataset filters")
-        if is_main(rank):
-            print(f"[scene-list] {len(train_set.scenes)}/{len(wanted)} listed scenes kept")
+    # DL3DV and ScanNet share one loader class because `preprocess_scannet.py`
+    # writes the same on-disk contract; only the roots differ. Preprocess ScanNet
+    # with `--target-hw 224 384 --fit crop` and the two are the same shape, so
+    # mixing them needs nothing more than a ConcatDataset.
+    if args.data_root is None and args.scannet_root is None:
+        raise SystemExit("pass --data-root (DL3DV), --scannet-root (ScanNet), or both")
 
-    if args.overfit:
-        train_set.scenes = train_set.scenes[: args.overfit]
-        train_set.seed = 0  # deterministic frame choice, so the target is fixed
-        train_set.augment = False
+    def make_split(split: str, *, augment: bool, seed: int | None, sampling: str) -> dict:
+        built = {}
+        sources = (
+            ("dl3dv", args.data_root, args.depth_root, args.dense_only),
+            # ScanNet depth always exists, so `dense_only` would be a no-op that
+            # only risks dropping scenes over a missing flag.
+            ("scannet", args.scannet_root, args.scannet_depth_root or
+             (args.scannet_root / "depth" if args.scannet_root else None), False),
+        )
+        for name, root, depth_root, dense_only in sources:
+            if root is None:
+                continue
+            try:
+                built[name] = DL3DVDataset(
+                    root,
+                    name=name,
+                    split=split,
+                    num_frames=args.num_frames,
+                    resolution=args.resolution,
+                    sampling=sampling,
+                    augment=augment,
+                    seed=seed,
+                    depth_root=depth_root,
+                    dense_only=dense_only,
+                )
+            except ValueError as exc:
+                # An empty val split is normal for a set preprocessed without a
+                # holdout; an empty *train* split is not.
+                if split == "train":
+                    raise
+                if is_main(rank):
+                    print(f"[{name}] no {split} split ({exc}); skipping its {split} loader")
+        return built
+
+    train_parts = make_split("train", augment=True, seed=None, sampling=args.sampling)
+
+    for name, dataset in train_parts.items():
+        if args.scene_list is not None:
+            # After construction, so the dataset's own filters (dense_only,
+            # num_frames, image size) still apply -- a listed scene they drop
+            # stays dropped.
+            wanted = set(args.scene_list.read_text().split())
+            dataset.scenes = [e for e in dataset.scenes if f"{e['subset']}/{e['scene']}" in wanted]
+            if is_main(rank):
+                print(f"[scene-list] {name}: {len(dataset.scenes)}/{len(wanted)} listed scenes kept")
+        cap = {"dl3dv": args.dl3dv_scenes, "scannet": args.scannet_scenes}.get(name, 0)
+        if cap and cap < len(dataset.scenes):
+            # A plain prefix. DL3DV's 1K..5K subsets are release batches, not
+            # strata -- scene content is already unordered within and across
+            # them -- so the first N is as good a sample as a shuffle, and it has
+            # the advantage of being the same N on every rank and every rerun
+            # without depending on a seed.
+            dataset.scenes = dataset.scenes[:cap]
+            if is_main(rank):
+                print(f"[{name}] capped to the first {len(dataset.scenes)} train scenes")
+        if args.overfit:
+            dataset.scenes = dataset.scenes[: args.overfit]
+            dataset.seed = 0  # deterministic frame choice, so the target is fixed
+            dataset.augment = False
+    train_parts = {n: d for n, d in train_parts.items() if len(d.scenes) > 0}
+    if not train_parts:
+        raise SystemExit("no training scenes survived the dataset filters")
+
+    # Fails here rather than mid-epoch inside collate_scenes if the two sets were
+    # preprocessed at different resolutions.
+    image_hw = assert_stackable(train_parts, args.batch_size)
+
+    weights = {"dl3dv": args.dl3dv_weight, "scannet": args.scannet_weight}
+    train_set, source_names, sizes, epoch_counts = build_concat_trainset(
+        train_parts, weights, seed=args.seed
+    )
 
     train_sampler = DistributedSampler(train_set, shuffle=True, drop_last=True) if world_size > 1 else None
     train_loader = DataLoader(
@@ -290,36 +413,36 @@ def main() -> int:
         pin_memory=True,
         drop_last=True,
         persistent_workers=args.workers > 0,
-        collate_fn=collate_scenes,
+        collate_fn=collate_mixed,
     )
 
-    val_loader = None
+    val_loaders: dict[str, DataLoader] = {}
     if args.val_every and not args.overfit:
-        val_set = DL3DVDataset(
-            args.data_root,
-            split="val",
-            num_frames=args.num_frames,
-            resolution=args.resolution,
-            sampling="covisibility",
-            augment=False,
-            seed=1234,  # fixed frame selection so val numbers are comparable across steps
-            depth_root=args.depth_root,
-            dense_only=args.dense_only,
-        )
-        val_loader = DataLoader(
-            val_set,
-            batch_size=args.batch_size,
-            shuffle=False,
-            num_workers=max(args.workers // 2, 1),
-            pin_memory=True,
-            collate_fn=collate_scenes,
-        )
+        for name, dataset in make_split(
+            "val", augment=False, seed=1234, sampling="covisibility"
+        ).items():
+            # seed=1234 above fixes frame selection, so val numbers are
+            # comparable across steps.
+            val_loaders[name] = DataLoader(
+                TaggedDataset(dataset, name),
+                batch_size=args.batch_size,
+                shuffle=False,
+                num_workers=max(args.workers // 2, 1),
+                pin_memory=True,
+                collate_fn=collate_mixed,
+            )
 
     if is_main(rank):
+        mix = "  ".join(
+            f"{n}={s}" + (f"(x{c / s:.2g})" if c != s else "")
+            for n, s, c in zip(source_names, sizes, epoch_counts)
+        )
+        val_desc = ("  val " + " ".join(f"{n}={len(l.dataset)}" for n, l in val_loaders.items())
+                    if val_loaders else "  (no val)")
         print(
-            f"train scenes={len(train_set)}"
-            + (f"  val scenes={len(val_loader.dataset)}" if val_loader else "  (no val)")
-            + f"  frames/sample={args.num_frames}  world_size={world_size}"
+            f"train samples/epoch={len(train_set)} [{mix}]{val_desc}"
+            + f"  {image_hw[0]}x{image_hw[1]}  frames/sample={args.num_frames}"
+            + f"  world_size={world_size}"
         )
 
     # ---- optimiser ----
@@ -353,6 +476,8 @@ def main() -> int:
     epoch = 0
     running: dict[str, float] = {}
     running_count = 0
+    per_source: dict[str, float] = {}
+    per_source_count: dict[str, int] = {}
     started = time.time()
 
     while step < args.max_steps:
@@ -382,6 +507,19 @@ def main() -> int:
 
             for k, v in logs.items():
                 running[k] = running.get(k, 0.0) + v.item() / args.grad_accum
+            # Track the realised mix. The *share* is always exact, but a
+            # per-dataset loss is only meaningful when a batch cannot span the
+            # two: the criterion returns one scalar for the whole batch, so
+            # splitting it would report the same number for both datasets and
+            # look like a breakdown while carrying no information. At
+            # --batch-size 1 each batch is one dataset and it is exact.
+            if len(source_names) > 1:
+                share = 1.0 / len(batch["dataset"])
+                for source in batch["dataset"]:
+                    per_source_count[source] = per_source_count.get(source, 0) + share
+                if args.batch_size == 1:
+                    source = batch["dataset"][0]
+                    per_source[source] = per_source.get(source, 0.0) + logs["loss"].item()
 
             if not is_last_micro:
                 continue
@@ -398,6 +536,11 @@ def main() -> int:
 
             if is_main(rank) and args.log_every and step % args.log_every == 0:
                 means = {k: v / running_count for k, v in running.items()}
+                seen_total = max(sum(per_source_count.values()), 1e-9)
+                for source, seen in per_source_count.items():
+                    means[f"frac_{source}"] = seen / seen_total
+                for source, total in per_source.items():
+                    means[f"loss_{source}"] = total / max(per_source_count.get(source, 0), 1e-9)
                 elapsed = time.time() - started
                 lrs = scheduler.get_last_lr()
                 record = {
@@ -411,7 +554,13 @@ def main() -> int:
                     f"step {step:>7d}/{args.max_steps}  loss {means.get('loss', 0):.4f}  "
                     f"cam {means.get('loss_camera', 0):.4f}  depth {means.get('loss_depth', 0):.4f}  "
                     f"point {means.get('loss_point', 0):.4f}  cover {means.get('depth_valid', 0) * 100:.1f}%  "
-                    f"lr {record['lr']:.2e}  {record['steps_per_sec']:.2f} it/s",
+                    + "".join(
+                        f"{n}{means.get(f'frac_{n}', 0) * 100:.0f}%"
+                        + (f"/{means[f'loss_{n}']:.3f}" if f"loss_{n}" in means else "")
+                        + "  "
+                        for n in (source_names if len(source_names) > 1 else [])
+                    )
+                    + f"lr {record['lr']:.2e}  {record['steps_per_sec']:.2f} it/s",
                     flush=True,
                 )
                 with log_path.open("a") as fh:
@@ -422,17 +571,28 @@ def main() -> int:
                             continue
                         writer.add_scalar(f"train/{k}", v, step)
                 running, running_count, started = {}, 0, time.time()
+                per_source, per_source_count = {}, {}
 
-            if val_loader is not None and args.val_every and step % args.val_every == 0:
-                metrics = evaluate(model, val_loader, criterion, device, args.val_batches)
+            if val_loaders and args.val_every and step % args.val_every == 0:
+                metrics = evaluate_all(model, val_loaders, criterion, device, args.val_batches)
                 if is_main(rank):
-                    print(
-                        f"  [val @ {step}] loss {metrics.get('loss', float('nan')):.4f}  "
-                        f"AUC@30 {metrics.get('auc_at_30', float('nan')):.3f}  "
-                        f"rot_err {metrics.get('rot_err_deg_median', float('nan')):.2f}deg  "
-                        f"abs_rel {metrics.get('abs_rel', float('nan')):.3f}",
-                        flush=True,
-                    )
+                    nan = float("nan")
+
+                    def val_line(label: str, prefix: str = "") -> str:
+                        get = lambda k: metrics.get(f"{prefix}{k}", nan)  # noqa: E731
+                        return (
+                            f"  [val @ {step}] {label}loss {get('loss'):.4f}  "
+                            f"AUC@30 {get('auc_at_30'):.3f}  "
+                            f"rot_err {get('rot_err_deg_median'):.2f}deg  "
+                            f"abs_rel {get('abs_rel'):.3f}"
+                        )
+
+                    if len(val_loaders) > 1:
+                        for name in val_loaders:
+                            print(val_line(f"{name:>8s} ", f"{name}/"), flush=True)
+                        print(val_line("    mean "), flush=True)
+                    else:
+                        print(val_line(""), flush=True)
                     with log_path.open("a") as fh:
                         fh.write(json.dumps({"step": step, "split": "val", **metrics}) + "\n")
                     if writer is not None:

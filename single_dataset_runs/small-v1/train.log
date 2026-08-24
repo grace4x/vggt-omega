@@ -1,0 +1,21 @@
+loaded DINOv3 trunk from checkpoints/dinov3_vits16.pt (facebook/dinov3-vits16-pretrain-lvd1689m)
+preset=small  patch_embed=21.6M  aggregator_blocks=42.6M  camera_head=28.7M  dense_head=7.7M  total=100.6M
+[dl3dv] train: keeping 4871 scenes at (224, 384); dropped 13 at mismatched sizes [((384, 224), 13)]
+train scenes=4871  val scenes=106  frames/sample=16  world_size=1
+step     100/38000  loss 0.3892  cam 0.0487  depth 0.1457  lr 6.73e-06  2.33 it/s
+step     200/38000  loss 0.3181  cam 0.0412  depth 0.1120  lr 1.34e-05  2.42 it/s
+step     300/38000  loss 0.2692  cam 0.0359  depth 0.0895  lr 2.01e-05  2.42 it/s
+step     400/38000  loss 0.2635  cam 0.0358  depth 0.0845  lr 2.67e-05  2.43 it/s
+step     500/38000  loss 0.2516  cam 0.0348  depth 0.0777  lr 3.34e-05  2.43 it/s
+step     600/38000  loss 0.2489  cam 0.0349  depth 0.0744  lr 4.01e-05  2.42 it/s
+step     700/38000  loss 0.1864  cam 0.0342  depth 0.0155  lr 4.67e-05  2.43 it/s
+step     800/38000  loss 0.1981  cam 0.0354  depth 0.0211  lr 5.34e-05  2.43 it/s
+step     900/38000  loss 0.1579  cam 0.0345  depth -0.0148  lr 6.01e-05  2.43 it/s
+step    1000/38000  loss 0.1533  cam 0.0327  depth -0.0100  lr 6.67e-05  2.42 it/s
+step    1100/38000  loss 0.1518  cam 0.0324  depth -0.0103  lr 7.34e-05  2.42 it/s
+step    1200/38000  loss 0.1623  cam 0.0337  depth -0.0064  lr 8.01e-05  2.42 it/s
+step    1300/38000  loss 0.1480  cam 0.0347  depth -0.0255  lr 8.67e-05  2.39 it/s
+step    1400/38000  loss 0.1521  cam 0.0337  depth -0.0164  lr 9.34e-05  2.42 it/s
+step    1500/38000  loss 0.1350  cam 0.0338  depth -0.0340  lr 1.00e-04  2.43 it/s
+step    1600/38000  loss 0.1132  cam 0.0334  depth -0.0540  lr 1.00e-04  2.42 it/s
+step    1700/38000  loss 0.1103  cam 0.0321  depth -0.0501  lr 1.00e-04  2.42 it/s

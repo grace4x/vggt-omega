@@ -26,9 +26,15 @@ when the depth is, and `scene_scale` is the mean distance from the first camera 
 those same points -- so the target sits in the paper's unit space, with a mean
 point distance of 1, for every scene regardless of source.
 
+This class also loads ScanNet v2: `preprocess_scannet.py` deliberately writes
+the same on-disk contract, so the only difference is the roots you pass and the
+`name=` used in the log lines. ScanNet always takes the dense branch (its depth
+is the metric sensor's, ~95% coverage) and its sparse arrays are empty.
+
 Sanity check:
 
     python training/dl3dv_dataset.py --root ~/dl3dv-train --depth-root ~/dl3dv-depth
+    python training/dl3dv_dataset.py --root ~/scannet-train --depth-root ~/scannet-train/depth
 """
 
 from __future__ import annotations
@@ -67,7 +73,12 @@ class DL3DVDataset(Dataset):
         image_hw: tuple[int, int] | None = None,
         depth_root: str | Path | None = None,
         dense_only: bool = False,
+        name: str = "dl3dv",
     ) -> None:
+        # `name` only labels the log lines. ScanNet is loaded through this same
+        # class (`preprocess_scannet.py` writes the same contract), and having it
+        # announce itself as "[dl3dv]" while mixing the two is just confusing.
+        self.name = name
         self.root = Path(root)
         self.depth_root = Path(depth_root) if depth_root is not None else None
         index = json.loads((self.root / "index.json").read_text())
@@ -90,7 +101,7 @@ class DL3DVDataset(Dataset):
                 if not self.scenes:
                     raise ValueError(f"no {split!r} scene has dense depth under {self.depth_root}")
             print(
-                f"[dl3dv] {split}: {dense}/{total} scenes with dense depth"
+                f"[{self.name}] {split}: {dense}/{total} scenes with dense depth"
                 + ("; dropped the rest" if dense_only else "; rest fall back to sparse")
             )
 
@@ -145,7 +156,7 @@ class DL3DVDataset(Dataset):
         if len(by_shape) > 1:
             dropped = sorted((hw, len(v)) for hw, v in by_shape.items() if hw != target)
             print(
-                f"[dl3dv] {split}: keeping {len(by_shape[target])} scenes at {target}; "
+                f"[{self.name}] {split}: keeping {len(by_shape[target])} scenes at {target}; "
                 f"dropped {sum(n for _, n in dropped)} at mismatched sizes {dropped}"
             )
             self.scenes = by_shape[target]  # insertion order == original index order
