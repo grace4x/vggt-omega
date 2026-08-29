@@ -25,11 +25,13 @@ What the numbers mean, and the two traps in reading them:
   (mAA@30) is the headline the VGGT line of work reports; `rra_at_5` / `rta_at_5`
   break it into rotation and translation, and translation is the harder half.
 
-* **Depth** is reported both raw and median-aligned (`*_aligned`). The model
-  predicts in the loader's unit space -- scene normalised so the mean point
-  distance is 1 -- so raw `abs_rel` is a fair number *and* includes any global
-  scale error. The aligned pair divides that out and measures shape alone; a big
-  gap between the two means the model has the geometry but not the scale.
+* **Depth** is reported raw, median-aligned (`*_aligned`), and scale-shift
+  aligned (`*_ss`). The model predicts in the loader's unit space -- scene
+  normalised so the mean point distance is 1 -- so raw `abs_rel` is a fair
+  number *and* includes any global scale error. Median alignment multiplies by
+  `median(gt)/median(pred)` (scale only). Scale-shift fits `s * pred + t` by
+  least squares, which also removes a constant depth bias. A big gap between
+  raw and aligned means the model has the geometry but not the scale.
 
 * A window whose scale normalisation found nothing to key off (`scale_ok=False`)
   has no depth targets at all. Those windows are counted and excluded from the
@@ -76,6 +78,10 @@ DEPTH_KEYS = (
     "scale_ratio",
     "abs_rel_aligned",
     "delta_1.25_aligned",
+    "abs_rel_ss",
+    "delta_1.25_ss",
+    "ss_scale",
+    "ss_shift",
 )
 
 
@@ -127,7 +133,12 @@ def window_metrics(predictions: dict, batch: dict, index: int, criterion) -> dic
     depth, mask = single_batch["depth"], single_batch["depth_mask"]
     record.update(depth_metrics(single_pred["depth"], depth, mask))
     aligned = depth_metrics(single_pred["depth"], depth, mask, align_median=True)
-    record.update({f"{k}_aligned": v for k, v in aligned.items() if k != "scale_ratio"})
+    record.update({f"{k}_aligned": v for k, v in aligned.items() if k in ("abs_rel", "delta_1.25")})
+    ss = depth_metrics(single_pred["depth"], depth, mask, align_scale_shift=True)
+    record["abs_rel_ss"] = ss["abs_rel"]
+    record["delta_1.25_ss"] = ss["delta_1.25"]
+    record["ss_scale"] = ss["ss_scale"]
+    record["ss_shift"] = ss["ss_shift"]
 
     if not bool(single_batch["scale_ok"][0]) or not mask.any():
         for key in DEPTH_KEYS:
@@ -246,7 +257,9 @@ TABLE = (
     ("fov_err", "cam_fov", "{:.4f}"),
     ("abs_rel", "abs_rel", "{:.3f}"),
     ("abs_rel*", "abs_rel_aligned", "{:.3f}"),
+    ("abs_rel†", "abs_rel_ss", "{:.3f}"),
     ("d<1.25", "delta_1.25", "{:.3f}"),
+    ("d<1.25†", "delta_1.25_ss", "{:.3f}"),
     ("scale", "scale_ratio", "{:.3f}"),
     ("point_err", "point_err", "{:.3f}"),
     ("loss", "loss", "{:.4f}"),
@@ -264,7 +277,10 @@ def print_table(rows: list[tuple[str, int, dict]]) -> None:
             value = summary.get(key)
             cells.append(f"{fmt.format(value):>9}" if isinstance(value, float) and math.isfinite(value) else f"{'--':>9}")
         print(f"{name:<{name_width}}  {step:>7}  " + "  ".join(cells))
-    print("\n  * = median-aligned (scale removed).  scale = median(gt)/median(pred), 1.0 is correct.")
+    print(
+        "\n  * = median-aligned (scale only).  † = scale-shift aligned (s*pred+t, least squares)."
+        "  scale = median(gt)/median(pred), 1.0 is correct."
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:

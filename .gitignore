@@ -14,6 +14,8 @@ demo_outputs/
 checkpoints/
 clustering/*.npz
 clustering/*.npy
+patch_avg_clustering/*.npz
+multi_clustering/*.npz
 skyseg.onnx
 skyseg.onnx.tmp
 *.pt

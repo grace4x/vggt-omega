@@ -480,6 +480,17 @@ def pose_metrics(pred_pose_enc: torch.Tensor, gt_pose_enc: torch.Tensor) -> dict
     }
 
 
+def _fit_scale_shift(pred: torch.Tensor, gt: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    """Least-squares `s * pred + t ≈ gt` on 1-D valid pixels."""
+    if pred.numel() < 2:
+        return pred.new_tensor(1.0), pred.new_tensor(0.0)
+    design = torch.stack((pred, torch.ones_like(pred)), dim=-1)
+    scale, shift = torch.linalg.lstsq(design, gt).solution
+    if not torch.isfinite(scale) or not torch.isfinite(shift):
+        return pred.new_tensor(1.0), pred.new_tensor(0.0)
+    return scale, shift
+
+
 @torch.no_grad()
 def depth_metrics(
     pred_depth: torch.Tensor,
@@ -487,24 +498,40 @@ def depth_metrics(
     mask: torch.Tensor,
     *,
     align_median: bool = False,
+    align_scale_shift: bool = False,
     eps: float = 1e-6,
 ) -> dict[str, float]:
+    if align_median and align_scale_shift:
+        raise ValueError("align_median and align_scale_shift are mutually exclusive")
     if pred_depth.dim() == 5:
         pred_depth = pred_depth.squeeze(-1)
     mask = mask & torch.isfinite(gt_depth) & (gt_depth > eps)
+    nan = {
+        "abs_rel": float("nan"),
+        "delta_1.25": float("nan"),
+        "scale_ratio": float("nan"),
+    }
+    if align_scale_shift:
+        nan["ss_scale"] = float("nan")
+        nan["ss_shift"] = float("nan")
     if mask.sum() == 0:
-        return {"abs_rel": float("nan"), "delta_1.25": float("nan"), "scale_ratio": float("nan")}
+        return nan
 
     pred = pred_depth.float()[mask].clamp_min(eps)
     gt = gt_depth.float()[mask].clamp_min(eps)
     ratio = (gt.median() / pred.median()).item()
+    extra: dict[str, float] = {}
     if align_median:
         pred = pred * ratio
-
+    elif align_scale_shift:
+        scale, shift = _fit_scale_shift(pred, gt)
+        pred = (scale * pred + shift).clamp_min(eps)
+        extra = {"ss_scale": scale.item(), "ss_shift": shift.item()}
     return {
         "abs_rel": ((pred - gt).abs() / gt).mean().item(),
         "delta_1.25": (torch.maximum(pred / gt, gt / pred) < 1.25).float().mean().item(),
         "scale_ratio": ratio,
+        **extra,
     }
 
 
@@ -578,3 +605,7 @@ if __name__ == "__main__":
     print("pose metrics  flipped", {k: round(v, 4) for k, v in pose_metrics(flipped, gt_pose).items()},
           "  <- must match 'exact'")
     print("depth metrics        ", {k: round(v, 4) for k, v in depth_metrics(gt_depth * 1.1, gt_depth, dense).items()})
+    affine = gt_depth * 1.1 + 0.3
+    ss = depth_metrics(affine, gt_depth, dense, align_scale_shift=True)
+    print("depth metrics  s,t   ", {k: round(v, 4) for k, v in ss.items()},
+          "  <- abs_rel / d<1.25 must be ~0 after scale-shift")
