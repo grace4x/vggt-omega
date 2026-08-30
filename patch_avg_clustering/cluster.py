@@ -36,12 +36,18 @@ mismatches are refused rather than silently averaged.
 * `per-dataset` subtracts each layer's mean *within* each dataset, deleting that
   offset, so clusters form on content and tend to mix. Use it when the point is
   one-scene-per-mode coverage across both sets rather than a faithful similarity.
+* `none` skips the subtract: each image is only L2-normalized. That is how the
+  first `--layers 40` run was clustered (single-layer used to skip demeaning
+  unconditionally). A single layer is ~90-99% a shared DC direction, so cosine
+  collapses toward 1 and `--dedup` will be much hungrier; pass this only when
+  you want that recipe, not as a default.
 
 Either way the per-cluster dataset mix is printed and recorded, so the choice can
 be checked rather than assumed.
 
     .venv/bin/python patch_avg_clustering/cluster.py --k 150
     .venv/bin/python patch_avg_clustering/cluster.py --k 150 --center per-dataset
+    .venv/bin/python patch_avg_clustering/cluster.py --k 50 --center none --dedup 0.97 --target 1466
 
 Writes `clusters_dl3dv_scannet_patchavg_k<k>.json` (+ a contact sheet beside it) for
 `subset.py`.
@@ -335,11 +341,15 @@ def centered_unit(patch, n_layers, groups):
     nothing to partition on. Subtract each layer's mean direction and renormalize to
     strip it out. `groups` selects the population the mean is taken over: one group of
     everything (pooled) or one per dataset (which also deletes the between-dataset
-    offset). Done for one layer as well as several: a single layer is, if anything,
+    offset). `groups is None` skips the subtract (`--center none`): L2-normalize
+    only, matching the old single-layer path. A single layer is, if anything,
     *more* DC-dominated (one massive residual-stream channel can be ~90% of the
     unit vector), and leaving it in collapses cosine to ~1.
     """
     flat = patch.reshape(-1, patch.shape[-1])
+    if groups is None:
+        X = flat / np.maximum(np.linalg.norm(flat, axis=-1, keepdims=True), 1e-12)
+        return X.reshape(patch.shape)
     per_image_groups = np.repeat(groups, patch.shape[1])  # a scene's frames share its group
     layer_dims = patch.shape[-1] // n_layers
     X = np.empty_like(flat)
@@ -358,9 +368,10 @@ p = argparse.ArgumentParser(description=__doc__,
 p.add_argument("--k", type=int, default=K, help="k-means cluster count (default: %(default)s)")
 p.add_argument("--datasets", nargs="+", choices=tuple(DEFAULTS), default=list(DEFAULTS),
                metavar="NAME", help="sources to pool (default: %(default)s)")
-p.add_argument("--center", choices=("pooled", "per-dataset"), default="pooled",
+p.add_argument("--center", choices=("pooled", "per-dataset", "none"), default="pooled",
                help="population each layer's DC mean is taken over (default: %(default)s); "
-                    "per-dataset deletes the between-dataset offset, mixing the clusters")
+                    "per-dataset deletes the between-dataset offset, mixing the clusters; "
+                    "none skips demeaning (the first --layers 40 recipe)")
 p.add_argument("--n-init", type=int, default=N_INIT, help="k-means++ restarts; best run kept")
 p.add_argument("--max-iter", type=int, default=MAX_ITER)
 p.add_argument("--seed", type=int, default=SEED)
@@ -382,7 +393,7 @@ p.add_argument("--min-keep", type=int, default=1, metavar="N",
                help="scenes every surviving cluster keeps when pruning (default: %(default)s)")
 p.add_argument("--out", type=Path, default=None, metavar="PATH",
                help="cluster -> scene mapping "
-                    "(default: clusters_<datasets>_patchavg_k<k>[_per-dataset].json)")
+                    "(default: clusters_<datasets>_patchavg_k<k>[_per-dataset|_none].json)")
 p.add_argument("--thumbs", type=Path, default=REPO / "clustering" / "thumbs", metavar="DIR",
                help="contact-sheet thumbnail cache, shared with clustering/ (default: %(default)s)")
 p.add_argument("--no-html", action="store_true", help="skip the contact sheet")
@@ -396,8 +407,9 @@ if args.target_pct is not None and not (0 < args.target_pct <= 100):
     raise SystemExit("--target-pct must be in (0, 100]")
 if args.tau <= 0:
     raise SystemExit("--tau must be > 0")
-out = args.out or HERE / ("clusters_" + "_".join(args.datasets) + f"_patchavg_k{args.k}"
-                          + ("_per-dataset" if args.center == "per-dataset" else "") + ".json")
+center_tag = { "pooled": "", "per-dataset": "_per-dataset", "none": "_none" }[args.center]
+out = args.out or HERE / ("clusters_" + "_".join(args.datasets)
+                          + f"_patchavg_k{args.k}{center_tag}.json")
 
 sources = sources_from_args(args, names=args.datasets)
 patch, rows, recipe = load_pool(sources, args.split, args.num_frames)
@@ -406,9 +418,12 @@ datasets = np.array([r["dataset"] for r in rows])
 print(f"pooling {len(rows)} scenes "
       f"({', '.join(f'{n}={int((datasets == n).sum())}' for n in dict.fromkeys(datasets))}), "
       f"{n_images} frames/scene, mean patch tokens from layers {patch_layers}"
-      f"{', final-ln' if final_ln else ''}, model {model}")
+      f"{', final-ln' if final_ln else ''}, model {model}, center={args.center}")
 
-groups = datasets if args.center == "per-dataset" else np.zeros(len(rows), dtype=np.int8)
+if args.center == "none":
+    groups = None
+else:
+    groups = datasets if args.center == "per-dataset" else np.zeros(len(rows), dtype=np.int8)
 X = centered_unit(patch, len(patch_layers), groups)
 centroid = X.mean(axis=1)     # (N, dim); NOT re-normalized
 sim = centroid @ centroid.T   # == the mean of the n_images^2 pairwise cosines per scene pair
