@@ -12,7 +12,7 @@ runs/
 outputs/
 demo_outputs/
 checkpoints/
-clustering/*.npz
+*.npz
 clustering/*.npy
 patch_avg_clustering/*.npz
 multi_clustering/*.npz

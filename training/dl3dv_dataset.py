@@ -379,6 +379,7 @@ class DL3DVDataset(Dataset):
             "scale_ok": torch.tensor(bool(mask.any())),
             "scene_scale": torch.tensor(scene_scale),
             "scene_id": entry["scene"],
+            "subset": entry["subset"],
         }
 
 
