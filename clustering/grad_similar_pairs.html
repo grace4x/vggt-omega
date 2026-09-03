@@ -1,0 +1,333 @@
+<!doctype html><meta charset=utf-8>
+<title>Training-loss gradient pairs</title>
+<style>
+body{background:#111;color:#ddd;font:13px system-ui;margin:0;padding:16px}
+header{position:sticky;top:0;background:#111;padding:8px 0 12px;z-index:2;border-bottom:1px solid #222}
+h1{font-size:15px;font-weight:600;margin:0 0 4px}
+.dim{color:#888;font-weight:400}
+.meta{color:#888;font:11px ui-monospace;line-height:1.5}
+.nav{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:8px}
+.nav a{color:#9ec5f4;text-decoration:none;font-size:12px}
+.nav a:hover{text-decoration:underline}
+.section{font-size:14px;font-weight:600;margin:28px 0 14px;padding-top:8px;border-top:1px solid #333;color:#e8c4a0;scroll-margin-top:88px}
+.section:first-of-type{margin-top:16px;border-top:none;padding-top:0}
+.pair{margin:18px 0 24px;padding-bottom:18px;border-bottom:1px solid #222}
+h3{font-size:13px;font-weight:600;margin:0 0 10px;display:flex;gap:10px;align-items:baseline}
+h3 b{font-family:ui-monospace;color:#9ec5f4}
+.pair[data-kind="bottom_grad"] h3 b{color:#f0a080}
+.pair[data-kind="middle_grad"] h3 b{color:#9ed4a0}
+.row{display:flex;gap:14px;flex-wrap:wrap}
+figure{margin:0;max-width:220px}
+figure img,.noimg{display:block;border-radius:4px;box-shadow:0 0 0 2px #333}
+.noimg{background:#1a1a19}
+figcaption{font:10px ui-monospace;display:grid;gap:2px;margin-top:6px}
+.s{color:#86b6ef}
+.id{color:#ccc}
+.loss{color:#ddd;font-weight:600}
+</style>
+<header>
+<h1>Training-loss gradient pairs</h1>
+<p class=meta>500 scenes &middot; final.pt step 30000 &middot; 124750 total pairs &middot; all-pairs cos min -0.740 med +0.001 mean +0.002 max +0.818</p>
+<nav class=nav><a href="#top">Highest gradient cosine (25, +0.65&hellip;+0.82)</a><a href="#middle">Median gradient cosine (~+0.001) (25, -0.03&hellip;+0.03)</a><a href="#bottom">Lowest gradient cosine (25, -0.74&hellip;-0.61)</a></nav>
+</header>
+<h2 class=section id="top">Highest gradient cosine</h2><section class=pair data-kind="top_grad"><h3>#1 <b>grad cos +0.818</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/5bccb54fa2654f8caeb6ebdec31dc15f894165ef92d8952f84b5e47d1c8f6284
+loss 0.451  depth 0.206
+||g|| 22.83"><img src="thumbs/1K_5bccb54fa2654f8caeb6ebdec31dc15f894165ef92d8952f84b5e47d1c8f6284.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>5bccb54fa265</span><span class=loss>L=0.451</span></figcaption></figure><figure title="dl3dv/1K/5f3b51b30dad3570fb341bca570d65f4f17d13cd86572d8389d50621eb18c811
+loss 0.398  depth 0.152
+||g|| 19.64"><img src="thumbs/1K_5f3b51b30dad3570fb341bca570d65f4f17d13cd86572d8389d50621eb18c811.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>5f3b51b30dad</span><span class=loss>L=0.398</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#2 <b>grad cos +0.764</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/00534f5868a6f72e77befbdb06e35ee9dc34e175dddf0e64e8b1922e494c8e24
+loss 0.949  depth 0.483
+||g|| 21.02"><img src="thumbs/1K_00534f5868a6f72e77befbdb06e35ee9dc34e175dddf0e64e8b1922e494c8e24.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>00534f5868a6</span><span class=loss>L=0.949</span></figcaption></figure><figure title="dl3dv/1K/00def8c08b0a092efa8b6aa444f1bb411333d6bdc7926885c7a72680d189a3c8
+loss 0.919  depth 0.571
+||g|| 17.50"><img src="thumbs/1K_00def8c08b0a092efa8b6aa444f1bb411333d6bdc7926885c7a72680d189a3c8.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>00def8c08b0a</span><span class=loss>L=0.919</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#3 <b>grad cos +0.727</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/5454b71d612cc2b020e60bd2d8a018dc33d62b5fbd5c041b55a752480a8a97ba
+loss 0.544  depth 0.249
+||g|| 16.05"><img src="thumbs/1K_5454b71d612cc2b020e60bd2d8a018dc33d62b5fbd5c041b55a752480a8a97ba.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>5454b71d612c</span><span class=loss>L=0.544</span></figcaption></figure><figure title="dl3dv/1K/833f8228e89cadef697f2f21bfc22ee43834e4c7d0b099c2764d96933f4e0d28
+loss 0.561  depth 0.264
+||g|| 33.52"><img src="thumbs/1K_833f8228e89cadef697f2f21bfc22ee43834e4c7d0b099c2764d96933f4e0d28.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>833f8228e89c</span><span class=loss>L=0.561</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#4 <b>grad cos +0.697</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/5f3b51b30dad3570fb341bca570d65f4f17d13cd86572d8389d50621eb18c811
+loss 0.398  depth 0.152
+||g|| 19.64"><img src="thumbs/1K_5f3b51b30dad3570fb341bca570d65f4f17d13cd86572d8389d50621eb18c811.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>5f3b51b30dad</span><span class=loss>L=0.398</span></figcaption></figure><figure title="dl3dv/1K/70a692eef9fc193dd6a6a872de4b03bba157b9c7c8342a125810d112028745a8
+loss 0.716  depth 0.275
+||g|| 20.56"><img src="thumbs/1K_70a692eef9fc193dd6a6a872de4b03bba157b9c7c8342a125810d112028745a8.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>70a692eef9fc</span><span class=loss>L=0.716</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#5 <b>grad cos +0.694</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/1bd8b664e906ab3b3081a9e0adc03fb5a26676d43b21fc6132547df33f80d15a
+loss 1.023  depth 0.541
+||g|| 23.66"><img src="thumbs/1K_1bd8b664e906ab3b3081a9e0adc03fb5a26676d43b21fc6132547df33f80d15a.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>1bd8b664e906</span><span class=loss>L=1.023</span></figcaption></figure><figure title="dl3dv/1K/66368af692b290a16426f6f0bbac527152f740406c3ceb5e47d5a62a645d4a0a
+loss 0.548  depth 0.250
+||g|| 23.50"><img src="thumbs/1K_66368af692b290a16426f6f0bbac527152f740406c3ceb5e47d5a62a645d4a0a.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>66368af692b2</span><span class=loss>L=0.548</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#6 <b>grad cos +0.688</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/4c57109dcbce7a11953532673415ece17f85e4429894628c925be678bf0d92b2
+loss 0.917  depth 0.479
+||g|| 22.35"><img src="thumbs/1K_4c57109dcbce7a11953532673415ece17f85e4429894628c925be678bf0d92b2.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>4c57109dcbce</span><span class=loss>L=0.917</span></figcaption></figure><figure title="dl3dv/1K/4d5f2c68dd8928c1d08c9598fe8d180cfcfdf473fe25cbfba4cb9e626b834ea4
+loss 1.200  depth 0.306
+||g|| 23.59"><img src="thumbs/1K_4d5f2c68dd8928c1d08c9598fe8d180cfcfdf473fe25cbfba4cb9e626b834ea4.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>4d5f2c68dd89</span><span class=loss>L=1.200</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#7 <b>grad cos +0.686</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/2d5fe1fea18fb4903e7b5256a1c3f9a175be5d9f78da6722e5d46c9795d7de10
+loss 1.361  depth 0.696
+||g|| 32.39"><img src="thumbs/1K_2d5fe1fea18fb4903e7b5256a1c3f9a175be5d9f78da6722e5d46c9795d7de10.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>2d5fe1fea18f</span><span class=loss>L=1.361</span></figcaption></figure><figure title="dl3dv/1K/30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc
+loss 0.984  depth 0.373
+||g|| 29.03"><img src="thumbs/1K_30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>30844e7aaec5</span><span class=loss>L=0.984</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#8 <b>grad cos +0.683</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/209c06fcb60c853761e01e9469d850bd090b44da7bda4cf1856f5d37a7b81429
+loss 0.654  depth 0.231
+||g|| 16.39"><img src="thumbs/1K_209c06fcb60c853761e01e9469d850bd090b44da7bda4cf1856f5d37a7b81429.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>209c06fcb60c</span><span class=loss>L=0.654</span></figcaption></figure><figure title="dl3dv/1K/48ed9f937b96e95b934d414e1b265a14087378c36460976c3ac8eb3fb2804502
+loss 0.910  depth 0.330
+||g|| 15.55"><img src="thumbs/1K_48ed9f937b96e95b934d414e1b265a14087378c36460976c3ac8eb3fb2804502.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>48ed9f937b96</span><span class=loss>L=0.910</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#9 <b>grad cos +0.679</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab
+loss 0.518  depth 0.245
+||g|| 26.73"><img src="thumbs/1K_6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>6c4500cef98b</span><span class=loss>L=0.518</span></figcaption></figure><figure title="dl3dv/1K/7068884ae9a274324641cfe7744b98bb4c56906fa47d9dbdacdf02731fad477d
+loss 0.455  depth 0.229
+||g|| 17.64"><img src="thumbs/1K_7068884ae9a274324641cfe7744b98bb4c56906fa47d9dbdacdf02731fad477d.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>7068884ae9a2</span><span class=loss>L=0.455</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#10 <b>grad cos +0.679</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/5a27c00f525f5484b7aa0d0107051253bf7bb395bde0b3a4486ff8c52fb4965e
+loss 0.834  depth 0.424
+||g|| 21.22"><img src="thumbs/1K_5a27c00f525f5484b7aa0d0107051253bf7bb395bde0b3a4486ff8c52fb4965e.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>5a27c00f525f</span><span class=loss>L=0.834</span></figcaption></figure><figure title="dl3dv/1K/5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc
+loss 0.677  depth 0.322
+||g|| 27.67"><img src="thumbs/1K_5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>5b240cc17740</span><span class=loss>L=0.677</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#11 <b>grad cos +0.675</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc
+loss 0.984  depth 0.373
+||g|| 29.03"><img src="thumbs/1K_30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>30844e7aaec5</span><span class=loss>L=0.984</span></figcaption></figure><figure title="dl3dv/1K/6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab
+loss 0.518  depth 0.245
+||g|| 26.73"><img src="thumbs/1K_6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>6c4500cef98b</span><span class=loss>L=0.518</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#12 <b>grad cos +0.674</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/5a27c00f525f5484b7aa0d0107051253bf7bb395bde0b3a4486ff8c52fb4965e
+loss 0.834  depth 0.424
+||g|| 21.22"><img src="thumbs/1K_5a27c00f525f5484b7aa0d0107051253bf7bb395bde0b3a4486ff8c52fb4965e.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>5a27c00f525f</span><span class=loss>L=0.834</span></figcaption></figure><figure title="dl3dv/1K/833f8228e89cadef697f2f21bfc22ee43834e4c7d0b099c2764d96933f4e0d28
+loss 0.561  depth 0.264
+||g|| 33.52"><img src="thumbs/1K_833f8228e89cadef697f2f21bfc22ee43834e4c7d0b099c2764d96933f4e0d28.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>833f8228e89c</span><span class=loss>L=0.561</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#13 <b>grad cos +0.670</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/1b331d86ed9501a65135172a15348b6c823f6808ccc93fcc89d7c3b2eb19f6c5
+loss 0.525  depth 0.270
+||g|| 24.04"><img src="thumbs/1K_1b331d86ed9501a65135172a15348b6c823f6808ccc93fcc89d7c3b2eb19f6c5.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>1b331d86ed95</span><span class=loss>L=0.525</span></figcaption></figure><figure title="dl3dv/1K/5b1e56386e263f2324365d2c623d6b746280aa4f5a6257bb0ba66e5dff135c8a
+loss 0.727  depth 0.331
+||g|| 18.46"><img src="thumbs/1K_5b1e56386e263f2324365d2c623d6b746280aa4f5a6257bb0ba66e5dff135c8a.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>5b1e56386e26</span><span class=loss>L=0.727</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#14 <b>grad cos +0.670</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/35705a35213165b89ff8f7c9355c523634c2aa513c7e86c737b7d3d2a7d6317f
+loss 1.160  depth 0.486
+||g|| 25.50"><img src="thumbs/1K_35705a35213165b89ff8f7c9355c523634c2aa513c7e86c737b7d3d2a7d6317f.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>35705a352131</span><span class=loss>L=1.160</span></figcaption></figure><figure title="dl3dv/1K/6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab
+loss 0.518  depth 0.245
+||g|| 26.73"><img src="thumbs/1K_6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>6c4500cef98b</span><span class=loss>L=0.518</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#15 <b>grad cos +0.666</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc
+loss 0.677  depth 0.322
+||g|| 27.67"><img src="thumbs/1K_5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>5b240cc17740</span><span class=loss>L=0.677</span></figcaption></figure><figure title="dl3dv/1K/6388041259ba089a7a9b23b59d2eeb90dbc6f95c03d0afbc2a77147872dfb318
+loss 0.773  depth 0.386
+||g|| 22.15"><img src="thumbs/1K_6388041259ba089a7a9b23b59d2eeb90dbc6f95c03d0afbc2a77147872dfb318.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>6388041259ba</span><span class=loss>L=0.773</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#16 <b>grad cos +0.664</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc
+loss 0.984  depth 0.373
+||g|| 29.03"><img src="thumbs/1K_30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>30844e7aaec5</span><span class=loss>L=0.984</span></figcaption></figure><figure title="dl3dv/1K/5f3b51b30dad3570fb341bca570d65f4f17d13cd86572d8389d50621eb18c811
+loss 0.398  depth 0.152
+||g|| 19.64"><img src="thumbs/1K_5f3b51b30dad3570fb341bca570d65f4f17d13cd86572d8389d50621eb18c811.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>5f3b51b30dad</span><span class=loss>L=0.398</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#17 <b>grad cos +0.664</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/4c57109dcbce7a11953532673415ece17f85e4429894628c925be678bf0d92b2
+loss 0.917  depth 0.479
+||g|| 22.35"><img src="thumbs/1K_4c57109dcbce7a11953532673415ece17f85e4429894628c925be678bf0d92b2.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>4c57109dcbce</span><span class=loss>L=0.917</span></figcaption></figure><figure title="dl3dv/1K/5667ec8da9e70c4404959562a1555b730638caf5487064220650fb7c9dc32f38
+loss 1.237  depth 0.514
+||g|| 21.41"><img src="thumbs/1K_5667ec8da9e70c4404959562a1555b730638caf5487064220650fb7c9dc32f38.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>5667ec8da9e7</span><span class=loss>L=1.237</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#18 <b>grad cos +0.661</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/077de0554f2217ec92dfd64b78e8036aa2ea8349819aef924e77beedd975a51c
+loss 1.513  depth 0.596
+||g|| 24.89"><img src="thumbs/1K_077de0554f2217ec92dfd64b78e8036aa2ea8349819aef924e77beedd975a51c.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>077de0554f22</span><span class=loss>L=1.513</span></figcaption></figure><figure title="dl3dv/1K/833f8228e89cadef697f2f21bfc22ee43834e4c7d0b099c2764d96933f4e0d28
+loss 0.561  depth 0.264
+||g|| 33.52"><img src="thumbs/1K_833f8228e89cadef697f2f21bfc22ee43834e4c7d0b099c2764d96933f4e0d28.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>833f8228e89c</span><span class=loss>L=0.561</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#19 <b>grad cos +0.660</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/674efe8102d134fd38f98f5654d9981c23661d6adf2243f4aca4c3943ab57369
+loss 0.632  depth 0.324
+||g|| 27.20"><img src="thumbs/1K_674efe8102d134fd38f98f5654d9981c23661d6adf2243f4aca4c3943ab57369.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>674efe8102d1</span><span class=loss>L=0.632</span></figcaption></figure><figure title="dl3dv/1K/8789a930c89c48d9314165712420a8f77f7fb32fe5a44cfa66761e357addf0c5
+loss 0.542  depth 0.252
+||g|| 14.97"><img src="thumbs/1K_8789a930c89c48d9314165712420a8f77f7fb32fe5a44cfa66761e357addf0c5.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>8789a930c89c</span><span class=loss>L=0.542</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#20 <b>grad cos +0.660</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/185ed9cf241fb631c5cf3202661d66a7b1d0c3a0dfc88cd228244c2942b844d7
+loss 1.397  depth 0.335
+||g|| 24.33"><img src="thumbs/1K_185ed9cf241fb631c5cf3202661d66a7b1d0c3a0dfc88cd228244c2942b844d7.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>185ed9cf241f</span><span class=loss>L=1.397</span></figcaption></figure><figure title="dl3dv/1K/3fae5e0bb1354fe30a0a23934ab00c7a51004027cc79ae1205f910b7bdefd33f
+loss 1.073  depth 0.429
+||g|| 28.19"><img src="thumbs/1K_3fae5e0bb1354fe30a0a23934ab00c7a51004027cc79ae1205f910b7bdefd33f.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>3fae5e0bb135</span><span class=loss>L=1.073</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#21 <b>grad cos +0.655</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/5a27c00f525f5484b7aa0d0107051253bf7bb395bde0b3a4486ff8c52fb4965e
+loss 0.834  depth 0.424
+||g|| 21.22"><img src="thumbs/1K_5a27c00f525f5484b7aa0d0107051253bf7bb395bde0b3a4486ff8c52fb4965e.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>5a27c00f525f</span><span class=loss>L=0.834</span></figcaption></figure><figure title="dl3dv/1K/674efe8102d134fd38f98f5654d9981c23661d6adf2243f4aca4c3943ab57369
+loss 0.632  depth 0.324
+||g|| 27.20"><img src="thumbs/1K_674efe8102d134fd38f98f5654d9981c23661d6adf2243f4aca4c3943ab57369.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>674efe8102d1</span><span class=loss>L=0.632</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#22 <b>grad cos +0.652</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/48bbc292ae5da66f81c588b3d1ed515d0df661d1f28f5f56350a868ecd695592
+loss 1.756  depth 0.633
+||g|| 28.63"><img src="thumbs/1K_48bbc292ae5da66f81c588b3d1ed515d0df661d1f28f5f56350a868ecd695592.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>48bbc292ae5d</span><span class=loss>L=1.756</span></figcaption></figure><figure title="dl3dv/1K/4d5f2c68dd8928c1d08c9598fe8d180cfcfdf473fe25cbfba4cb9e626b834ea4
+loss 1.200  depth 0.306
+||g|| 23.59"><img src="thumbs/1K_4d5f2c68dd8928c1d08c9598fe8d180cfcfdf473fe25cbfba4cb9e626b834ea4.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>4d5f2c68dd89</span><span class=loss>L=1.200</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#23 <b>grad cos +0.651</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/367f7d6f6c886e6b2562344eee3959411fdf300f6cf4996e612ab58b8c4e6aed
+loss 0.795  depth 0.446
+||g|| 21.35"><img src="thumbs/1K_367f7d6f6c886e6b2562344eee3959411fdf300f6cf4996e612ab58b8c4e6aed.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>367f7d6f6c88</span><span class=loss>L=0.795</span></figcaption></figure><figure title="dl3dv/1K/5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc
+loss 0.677  depth 0.322
+||g|| 27.67"><img src="thumbs/1K_5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>5b240cc17740</span><span class=loss>L=0.677</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#24 <b>grad cos +0.650</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc
+loss 0.677  depth 0.322
+||g|| 27.67"><img src="thumbs/1K_5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>5b240cc17740</span><span class=loss>L=0.677</span></figcaption></figure><figure title="dl3dv/1K/674efe8102d134fd38f98f5654d9981c23661d6adf2243f4aca4c3943ab57369
+loss 0.632  depth 0.324
+||g|| 27.20"><img src="thumbs/1K_674efe8102d134fd38f98f5654d9981c23661d6adf2243f4aca4c3943ab57369.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>674efe8102d1</span><span class=loss>L=0.632</span></figcaption></figure></div></section><section class=pair data-kind="top_grad"><h3>#25 <b>grad cos +0.650</b><span class=dim>top grad</span></h3><div class=row><figure title="dl3dv/1K/137b1f244a6eeaa52119c1be2cdf13516dd5a1ee5b5df2c25a13ce777a25610e
+loss 0.908  depth 0.426
+||g|| 18.08"><img src="thumbs/1K_137b1f244a6eeaa52119c1be2cdf13516dd5a1ee5b5df2c25a13ce777a25610e.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>137b1f244a6e</span><span class=loss>L=0.908</span></figcaption></figure><figure title="dl3dv/1K/84b5d25838c24f8875a66aa61d99ac42ea91782fe7fe7089764a981edd6ed390
+loss 0.714  depth 0.407
+||g|| 15.66"><img src="thumbs/1K_84b5d25838c24f8875a66aa61d99ac42ea91782fe7fe7089764a981edd6ed390.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>84b5d25838c2</span><span class=loss>L=0.714</span></figcaption></figure></div></section><h2 class=section id="middle">Median gradient cosine (~+0.001)</h2><section class=pair data-kind="middle_grad"><h3>#1 <b>grad cos -0.030</b><span class=dim>middle grad</span></h3><div class=row><figure title="dl3dv/1K/6faf38ca085f50c565660dbe7513d069c57caaa3b2970bb1605fc641dfbef10d
+loss 1.181  depth 0.333
+||g|| 28.35"><img src="thumbs/1K_6faf38ca085f50c565660dbe7513d069c57caaa3b2970bb1605fc641dfbef10d.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>6faf38ca085f</span><span class=loss>L=1.181</span></figcaption></figure><figure title="scannet/scannet/scene0084_02
+loss 2.475  depth 0.466
+||g|| 28.09"><img src="thumbs/scannet_scene0084_02.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0084_02</span><span class=loss>L=2.475</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#2 <b>grad cos -0.027</b><span class=dim>middle grad</span></h3><div class=row><figure title="scannet/scannet/scene0025_01
+loss 1.790  depth 0.296
+||g|| 79.70"><img src="thumbs/scannet_scene0025_01.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0025_01</span><span class=loss>L=1.790</span></figcaption></figure><figure title="scannet/scannet/scene0076_00
+loss 0.585  depth 0.187
+||g|| 20.03"><img src="thumbs/scannet_scene0076_00.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0076_00</span><span class=loss>L=0.585</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#3 <b>grad cos -0.024</b><span class=dim>middle grad</span></h3><div class=row><figure title="dl3dv/1K/534dd8e7547c63758476ce918c925b026993817adfd9b2b51596c9e46f1aa4a0
+loss 0.730  depth 0.330
+||g|| 19.55"><img src="thumbs/1K_534dd8e7547c63758476ce918c925b026993817adfd9b2b51596c9e46f1aa4a0.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>534dd8e7547c</span><span class=loss>L=0.730</span></figcaption></figure><figure title="scannet/scannet/scene0074_01
+loss 1.350  depth 0.306
+||g|| 15.98"><img src="thumbs/scannet_scene0074_01.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0074_01</span><span class=loss>L=1.350</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#4 <b>grad cos -0.021</b><span class=dim>middle grad</span></h3><div class=row><figure title="scannet/scannet/scene0114_02
+loss 1.262  depth 0.296
+||g|| 20.56"><img src="thumbs/scannet_scene0114_02.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0114_02</span><span class=loss>L=1.262</span></figcaption></figure><figure title="scannet/scannet/scene0176_00
+loss 1.236  depth 0.319
+||g|| 21.62"><img src="thumbs/scannet_scene0176_00.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0176_00</span><span class=loss>L=1.236</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#5 <b>grad cos -0.018</b><span class=dim>middle grad</span></h3><div class=row><figure title="dl3dv/1K/4a4114deef7eac9377f55eafae5d5e5794335795ec68c7e101adb9d6a7d95d60
+loss 1.048  depth 0.455
+||g|| 22.21"><img src="thumbs/1K_4a4114deef7eac9377f55eafae5d5e5794335795ec68c7e101adb9d6a7d95d60.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>4a4114deef7e</span><span class=loss>L=1.048</span></figcaption></figure><figure title="scannet/scannet/scene0161_02
+loss 0.608  depth 0.197
+||g|| 23.86"><img src="thumbs/scannet_scene0161_02.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0161_02</span><span class=loss>L=0.608</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#6 <b>grad cos -0.016</b><span class=dim>middle grad</span></h3><div class=row><figure title="dl3dv/1K/4866c877a521a9c8c97f6fe724b03db03d3572d0737ba9b19d8668adecc05d27
+loss 0.584  depth 0.309
+||g|| 16.86"><img src="thumbs/1K_4866c877a521a9c8c97f6fe724b03db03d3572d0737ba9b19d8668adecc05d27.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>4866c877a521</span><span class=loss>L=0.584</span></figcaption></figure><figure title="scannet/scannet/scene0195_00
+loss 1.341  depth 0.169
+||g|| 22.12"><img src="thumbs/scannet_scene0195_00.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0195_00</span><span class=loss>L=1.341</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#7 <b>grad cos -0.013</b><span class=dim>middle grad</span></h3><div class=row><figure title="scannet/scannet/scene0072_00
+loss 1.163  depth 0.209
+||g|| 106.60"><img src="thumbs/scannet_scene0072_00.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0072_00</span><span class=loss>L=1.163</span></figcaption></figure><figure title="scannet/scannet/scene0160_00
+loss 2.201  depth 0.408
+||g|| 34.20"><img src="thumbs/scannet_scene0160_00.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0160_00</span><span class=loss>L=2.201</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#8 <b>grad cos -0.011</b><span class=dim>middle grad</span></h3><div class=row><figure title="dl3dv/1K/5bccb54fa2654f8caeb6ebdec31dc15f894165ef92d8952f84b5e47d1c8f6284
+loss 0.451  depth 0.206
+||g|| 22.83"><img src="thumbs/1K_5bccb54fa2654f8caeb6ebdec31dc15f894165ef92d8952f84b5e47d1c8f6284.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>5bccb54fa265</span><span class=loss>L=0.451</span></figcaption></figure><figure title="scannet/scannet/scene0185_00
+loss 1.006  depth 0.221
+||g|| 22.53"><img src="thumbs/scannet_scene0185_00.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0185_00</span><span class=loss>L=1.006</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#9 <b>grad cos -0.008</b><span class=dim>middle grad</span></h3><div class=row><figure title="scannet/scannet/scene0196_00
+loss 2.045  depth 0.207
+||g|| 35.35"><img src="thumbs/scannet_scene0196_00.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0196_00</span><span class=loss>L=2.045</span></figcaption></figure><figure title="scannet/scannet/scene0241_00
+loss 1.143  depth 0.113
+||g|| 11.94"><img src="thumbs/scannet_scene0241_00.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0241_00</span><span class=loss>L=1.143</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#10 <b>grad cos -0.006</b><span class=dim>middle grad</span></h3><div class=row><figure title="dl3dv/1K/6ed1058f96df97f1c8175739843cf0f272ce0c60c5727dbb010a3a0fac3ef10d
+loss 0.902  depth 0.404
+||g|| 19.36"><img src="thumbs/1K_6ed1058f96df97f1c8175739843cf0f272ce0c60c5727dbb010a3a0fac3ef10d.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>6ed1058f96df</span><span class=loss>L=0.902</span></figcaption></figure><figure title="scannet/scannet/scene0240_00
+loss 1.563  depth 0.275
+||g|| 21.94"><img src="thumbs/scannet_scene0240_00.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0240_00</span><span class=loss>L=1.563</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#11 <b>grad cos -0.004</b><span class=dim>middle grad</span></h3><div class=row><figure title="scannet/scannet/scene0025_00
+loss 1.405  depth 0.253
+||g|| 24.60"><img src="thumbs/scannet_scene0025_00.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0025_00</span><span class=loss>L=1.405</span></figcaption></figure><figure title="scannet/scannet/scene0065_02
+loss 2.989  depth 0.687
+||g|| 29.62"><img src="thumbs/scannet_scene0065_02.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0065_02</span><span class=loss>L=2.989</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#12 <b>grad cos -0.001</b><span class=dim>middle grad</span></h3><div class=row><figure title="dl3dv/1K/2991a75d1f0fb2b7a891d424fc2459bb954b61599b52e74a056a7acfb2998b77
+loss 1.238  depth 0.600
+||g|| 18.40"><img src="thumbs/1K_2991a75d1f0fb2b7a891d424fc2459bb954b61599b52e74a056a7acfb2998b77.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>2991a75d1f0f</span><span class=loss>L=1.238</span></figcaption></figure><figure title="scannet/scannet/scene0183_00
+loss 0.685  depth 0.176
+||g|| 16.71"><img src="thumbs/scannet_scene0183_00.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0183_00</span><span class=loss>L=0.685</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#13 <b>grad cos +0.001</b><span class=dim>middle grad</span></h3><div class=row><figure title="dl3dv/1K/2823b1312d78d4808cdd886baf307d6cdea9799a9fbd9eaf8d9f7269b53fac16
+loss 1.144  depth 0.495
+||g|| 16.55"><img src="thumbs/1K_2823b1312d78d4808cdd886baf307d6cdea9799a9fbd9eaf8d9f7269b53fac16.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>2823b1312d78</span><span class=loss>L=1.144</span></figcaption></figure><figure title="scannet/scannet/scene0215_00
+loss 2.495  depth 0.327
+||g|| 35.68"><img src="thumbs/scannet_scene0215_00.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0215_00</span><span class=loss>L=2.495</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#14 <b>grad cos +0.003</b><span class=dim>middle grad</span></h3><div class=row><figure title="dl3dv/1K/59e01f4fb653f2251febf78e5fbd39e42a6754e2bffb86cde31842821235291e
+loss 1.488  depth 0.485
+||g|| 21.10"><img src="thumbs/1K_59e01f4fb653f2251febf78e5fbd39e42a6754e2bffb86cde31842821235291e.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>59e01f4fb653</span><span class=loss>L=1.488</span></figcaption></figure><figure title="scannet/scannet/scene0008_00
+loss 3.402  depth 0.466
+||g|| 19.18"><img src="thumbs/scannet_scene0008_00.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0008_00</span><span class=loss>L=3.402</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#15 <b>grad cos +0.006</b><span class=dim>middle grad</span></h3><div class=row><figure title="dl3dv/1K/3db82e7ffc5c7351031e0f5ff1e11313bbbd67e3d91368a2c71beeab1399e114
+loss 0.922  depth 0.484
+||g|| 11.44"><img src="thumbs/1K_3db82e7ffc5c7351031e0f5ff1e11313bbbd67e3d91368a2c71beeab1399e114.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>3db82e7ffc5c</span><span class=loss>L=0.922</span></figcaption></figure><figure title="scannet/scannet/scene0164_01
+loss 1.469  depth 0.163
+||g|| 31.49"><img src="thumbs/scannet_scene0164_01.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0164_01</span><span class=loss>L=1.469</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#16 <b>grad cos +0.008</b><span class=dim>middle grad</span></h3><div class=row><figure title="dl3dv/1K/0850228cdbf7df721a10d73003db4b8d9d83e17c480b79a6d5d643eff6c8c163
+loss 0.570  depth 0.278
+||g|| 15.17"><img src="thumbs/1K_0850228cdbf7df721a10d73003db4b8d9d83e17c480b79a6d5d643eff6c8c163.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>0850228cdbf7</span><span class=loss>L=0.570</span></figcaption></figure><figure title="scannet/scannet/scene0155_02
+loss 2.241  depth 0.307
+||g|| 19.10"><img src="thumbs/scannet_scene0155_02.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0155_02</span><span class=loss>L=2.241</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#17 <b>grad cos +0.010</b><span class=dim>middle grad</span></h3><div class=row><figure title="dl3dv/1K/23bf500882fabe2411e084765b364e32a47900759657478efcfe25ada37647d3
+loss 1.231  depth 0.581
+||g|| 27.56"><img src="thumbs/1K_23bf500882fabe2411e084765b364e32a47900759657478efcfe25ada37647d3.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>23bf500882fa</span><span class=loss>L=1.231</span></figcaption></figure><figure title="scannet/scannet/scene0174_00
+loss 2.515  depth 0.735
+||g|| 43.46"><img src="thumbs/scannet_scene0174_00.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0174_00</span><span class=loss>L=2.515</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#18 <b>grad cos +0.013</b><span class=dim>middle grad</span></h3><div class=row><figure title="dl3dv/1K/3af8037f9b5baa7ea38154f0d588f3d8eae65777b5e0d555209986cdb981fac2
+loss 0.929  depth 0.372
+||g|| 18.63"><img src="thumbs/1K_3af8037f9b5baa7ea38154f0d588f3d8eae65777b5e0d555209986cdb981fac2.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>3af8037f9b5b</span><span class=loss>L=0.929</span></figcaption></figure><figure title="scannet/scannet/scene0055_02
+loss 0.877  depth 0.205
+||g|| 18.67"><img src="thumbs/scannet_scene0055_02.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0055_02</span><span class=loss>L=0.877</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#19 <b>grad cos +0.015</b><span class=dim>middle grad</span></h3><div class=row><figure title="dl3dv/1K/23cdcd0cd5b44abb350ccbc6c780712d6b0c7af8143f8292f1d3e8ecfc9f4edd
+loss 0.826  depth 0.323
+||g|| 16.52"><img src="thumbs/1K_23cdcd0cd5b44abb350ccbc6c780712d6b0c7af8143f8292f1d3e8ecfc9f4edd.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>23cdcd0cd5b4</span><span class=loss>L=0.826</span></figcaption></figure><figure title="scannet/scannet/scene0125_00
+loss 2.320  depth 0.461
+||g|| 20.66"><img src="thumbs/scannet_scene0125_00.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0125_00</span><span class=loss>L=2.320</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#20 <b>grad cos +0.018</b><span class=dim>middle grad</span></h3><div class=row><figure title="dl3dv/1K/1bef58393fffbf6e34cac11d0b03dd22f65954a1668b7b9dec548f6ad44f29b5
+loss 0.733  depth 0.344
+||g|| 11.27"><img src="thumbs/1K_1bef58393fffbf6e34cac11d0b03dd22f65954a1668b7b9dec548f6ad44f29b5.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>1bef58393fff</span><span class=loss>L=0.733</span></figcaption></figure><figure title="scannet/scannet/scene0106_02
+loss 0.629  depth 0.241
+||g|| 26.35"><img src="thumbs/scannet_scene0106_02.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0106_02</span><span class=loss>L=0.629</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#21 <b>grad cos +0.021</b><span class=dim>middle grad</span></h3><div class=row><figure title="dl3dv/1K/4866c877a521a9c8c97f6fe724b03db03d3572d0737ba9b19d8668adecc05d27
+loss 0.584  depth 0.309
+||g|| 16.86"><img src="thumbs/1K_4866c877a521a9c8c97f6fe724b03db03d3572d0737ba9b19d8668adecc05d27.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>4866c877a521</span><span class=loss>L=0.584</span></figcaption></figure><figure title="scannet/scannet/scene0183_00
+loss 0.685  depth 0.176
+||g|| 16.71"><img src="thumbs/scannet_scene0183_00.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0183_00</span><span class=loss>L=0.685</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#22 <b>grad cos +0.023</b><span class=dim>middle grad</span></h3><div class=row><figure title="dl3dv/1K/74b7ddc52fe4b580143896f86848dbb9c57b7290316e7d9bcf145accf70a663d
+loss 1.158  depth 0.522
+||g|| 24.18"><img src="thumbs/1K_74b7ddc52fe4b580143896f86848dbb9c57b7290316e7d9bcf145accf70a663d.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>74b7ddc52fe4</span><span class=loss>L=1.158</span></figcaption></figure><figure title="scannet/scannet/scene0113_00
+loss 1.030  depth 0.232
+||g|| 28.33"><img src="thumbs/scannet_scene0113_00.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0113_00</span><span class=loss>L=1.030</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#23 <b>grad cos +0.026</b><span class=dim>middle grad</span></h3><div class=row><figure title="dl3dv/1K/842765cc9ac30a27672fa8d0281f7f0705f4cb410f65cd04059932e5dc538f85
+loss 0.494  depth 0.240
+||g|| 17.36"><img src="thumbs/1K_842765cc9ac30a27672fa8d0281f7f0705f4cb410f65cd04059932e5dc538f85.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>842765cc9ac3</span><span class=loss>L=0.494</span></figcaption></figure><figure title="scannet/scannet/scene0202_00
+loss 0.649  depth 0.189
+||g|| 14.76"><img src="thumbs/scannet_scene0202_00.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0202_00</span><span class=loss>L=0.649</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#24 <b>grad cos +0.029</b><span class=dim>middle grad</span></h3><div class=row><figure title="dl3dv/1K/2d5fe1fea18fb4903e7b5256a1c3f9a175be5d9f78da6722e5d46c9795d7de10
+loss 1.361  depth 0.696
+||g|| 32.39"><img src="thumbs/1K_2d5fe1fea18fb4903e7b5256a1c3f9a175be5d9f78da6722e5d46c9795d7de10.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>2d5fe1fea18f</span><span class=loss>L=1.361</span></figcaption></figure><figure title="scannet/scannet/scene0126_02
+loss 2.358  depth 0.357
+||g|| 46.93"><img src="thumbs/scannet_scene0126_02.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0126_02</span><span class=loss>L=2.358</span></figcaption></figure></div></section><section class=pair data-kind="middle_grad"><h3>#25 <b>grad cos +0.033</b><span class=dim>middle grad</span></h3><div class=row><figure title="dl3dv/1K/23c7491248ce55b148e4bab59f0b752e4d3e86a047913ba2a938dfd7bcf4b798
+loss 1.472  depth 0.523
+||g|| 36.73"><img src="thumbs/1K_23c7491248ce55b148e4bab59f0b752e4d3e86a047913ba2a938dfd7bcf4b798.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>23c7491248ce</span><span class=loss>L=1.472</span></figcaption></figure><figure title="scannet/scannet/scene0110_02
+loss 0.597  depth 0.167
+||g|| 29.20"><img src="thumbs/scannet_scene0110_02.jpg" width=220><figcaption><span class=s>scannet</span><span class=id>scene0110_02</span><span class=loss>L=0.597</span></figcaption></figure></div></section><h2 class=section id="bottom">Lowest gradient cosine</h2><section class=pair data-kind="bottom_grad"><h3>#1 <b>grad cos -0.740</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/1b331d86ed9501a65135172a15348b6c823f6808ccc93fcc89d7c3b2eb19f6c5
+loss 0.525  depth 0.270
+||g|| 24.04"><img src="thumbs/1K_1b331d86ed9501a65135172a15348b6c823f6808ccc93fcc89d7c3b2eb19f6c5.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>1b331d86ed95</span><span class=loss>L=0.525</span></figcaption></figure><figure title="dl3dv/1K/2f6b572215295f7e98c978f53dec261d471fa4cfb3e5f396984eafa8d68e8373
+loss 0.634  depth 0.270
+||g|| 33.95"><img src="thumbs/1K_2f6b572215295f7e98c978f53dec261d471fa4cfb3e5f396984eafa8d68e8373.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>2f6b57221529</span><span class=loss>L=0.634</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#2 <b>grad cos -0.728</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/4281b610dba370ca4e96e7c381c0ec826b4b0d8f8c6f8b872c11b2253e7220e0
+loss 1.120  depth 0.483
+||g|| 20.23"><img src="thumbs/1K_4281b610dba370ca4e96e7c381c0ec826b4b0d8f8c6f8b872c11b2253e7220e0.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>4281b610dba3</span><span class=loss>L=1.120</span></figcaption></figure><figure title="dl3dv/1K/63a9850d72dd876094a203d6f439f0fdc5e9d593233e84007669b19b922e415a
+loss 0.793  depth 0.418
+||g|| 17.72"><img src="thumbs/1K_63a9850d72dd876094a203d6f439f0fdc5e9d593233e84007669b19b922e415a.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>63a9850d72dd</span><span class=loss>L=0.793</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#3 <b>grad cos -0.727</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/5a27c00f525f5484b7aa0d0107051253bf7bb395bde0b3a4486ff8c52fb4965e
+loss 0.834  depth 0.424
+||g|| 21.22"><img src="thumbs/1K_5a27c00f525f5484b7aa0d0107051253bf7bb395bde0b3a4486ff8c52fb4965e.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>5a27c00f525f</span><span class=loss>L=0.834</span></figcaption></figure><figure title="dl3dv/1K/6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab
+loss 0.518  depth 0.245
+||g|| 26.73"><img src="thumbs/1K_6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>6c4500cef98b</span><span class=loss>L=0.518</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#4 <b>grad cos -0.701</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/35705a35213165b89ff8f7c9355c523634c2aa513c7e86c737b7d3d2a7d6317f
+loss 1.160  depth 0.486
+||g|| 25.50"><img src="thumbs/1K_35705a35213165b89ff8f7c9355c523634c2aa513c7e86c737b7d3d2a7d6317f.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>35705a352131</span><span class=loss>L=1.160</span></figcaption></figure><figure title="dl3dv/1K/5a27c00f525f5484b7aa0d0107051253bf7bb395bde0b3a4486ff8c52fb4965e
+loss 0.834  depth 0.424
+||g|| 21.22"><img src="thumbs/1K_5a27c00f525f5484b7aa0d0107051253bf7bb395bde0b3a4486ff8c52fb4965e.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>5a27c00f525f</span><span class=loss>L=0.834</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#5 <b>grad cos -0.697</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab
+loss 0.518  depth 0.245
+||g|| 26.73"><img src="thumbs/1K_6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>6c4500cef98b</span><span class=loss>L=0.518</span></figcaption></figure><figure title="dl3dv/1K/833f8228e89cadef697f2f21bfc22ee43834e4c7d0b099c2764d96933f4e0d28
+loss 0.561  depth 0.264
+||g|| 33.52"><img src="thumbs/1K_833f8228e89cadef697f2f21bfc22ee43834e4c7d0b099c2764d96933f4e0d28.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>833f8228e89c</span><span class=loss>L=0.561</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#6 <b>grad cos -0.695</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc
+loss 0.984  depth 0.373
+||g|| 29.03"><img src="thumbs/1K_30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>30844e7aaec5</span><span class=loss>L=0.984</span></figcaption></figure><figure title="dl3dv/1K/674efe8102d134fd38f98f5654d9981c23661d6adf2243f4aca4c3943ab57369
+loss 0.632  depth 0.324
+||g|| 27.20"><img src="thumbs/1K_674efe8102d134fd38f98f5654d9981c23661d6adf2243f4aca4c3943ab57369.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>674efe8102d1</span><span class=loss>L=0.632</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#7 <b>grad cos -0.689</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/0850228cdbf7df721a10d73003db4b8d9d83e17c480b79a6d5d643eff6c8c163
+loss 0.570  depth 0.278
+||g|| 15.17"><img src="thumbs/1K_0850228cdbf7df721a10d73003db4b8d9d83e17c480b79a6d5d643eff6c8c163.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>0850228cdbf7</span><span class=loss>L=0.570</span></figcaption></figure><figure title="dl3dv/1K/23cdcd0cd5b44abb350ccbc6c780712d6b0c7af8143f8292f1d3e8ecfc9f4edd
+loss 0.826  depth 0.323
+||g|| 16.52"><img src="thumbs/1K_23cdcd0cd5b44abb350ccbc6c780712d6b0c7af8143f8292f1d3e8ecfc9f4edd.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>23cdcd0cd5b4</span><span class=loss>L=0.826</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#8 <b>grad cos -0.678</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/6388041259ba089a7a9b23b59d2eeb90dbc6f95c03d0afbc2a77147872dfb318
+loss 0.773  depth 0.386
+||g|| 22.15"><img src="thumbs/1K_6388041259ba089a7a9b23b59d2eeb90dbc6f95c03d0afbc2a77147872dfb318.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>6388041259ba</span><span class=loss>L=0.773</span></figcaption></figure><figure title="dl3dv/1K/7068884ae9a274324641cfe7744b98bb4c56906fa47d9dbdacdf02731fad477d
+loss 0.455  depth 0.229
+||g|| 17.64"><img src="thumbs/1K_7068884ae9a274324641cfe7744b98bb4c56906fa47d9dbdacdf02731fad477d.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>7068884ae9a2</span><span class=loss>L=0.455</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#9 <b>grad cos -0.652</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc
+loss 0.984  depth 0.373
+||g|| 29.03"><img src="thumbs/1K_30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>30844e7aaec5</span><span class=loss>L=0.984</span></figcaption></figure><figure title="dl3dv/1K/5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc
+loss 0.677  depth 0.322
+||g|| 27.67"><img src="thumbs/1K_5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>5b240cc17740</span><span class=loss>L=0.677</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#10 <b>grad cos -0.649</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc
+loss 0.984  depth 0.373
+||g|| 29.03"><img src="thumbs/1K_30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>30844e7aaec5</span><span class=loss>L=0.984</span></figcaption></figure><figure title="dl3dv/1K/836e46477684b09ab2490144fcb20d262e92f8a2f1a3f972f61fdc1bf4a4b1fd
+loss 0.714  depth 0.253
+||g|| 19.97"><img src="thumbs/1K_836e46477684b09ab2490144fcb20d262e92f8a2f1a3f972f61fdc1bf4a4b1fd.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>836e46477684</span><span class=loss>L=0.714</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#11 <b>grad cos -0.647</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/2d5fe1fea18fb4903e7b5256a1c3f9a175be5d9f78da6722e5d46c9795d7de10
+loss 1.361  depth 0.696
+||g|| 32.39"><img src="thumbs/1K_2d5fe1fea18fb4903e7b5256a1c3f9a175be5d9f78da6722e5d46c9795d7de10.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>2d5fe1fea18f</span><span class=loss>L=1.361</span></figcaption></figure><figure title="dl3dv/1K/836e46477684b09ab2490144fcb20d262e92f8a2f1a3f972f61fdc1bf4a4b1fd
+loss 0.714  depth 0.253
+||g|| 19.97"><img src="thumbs/1K_836e46477684b09ab2490144fcb20d262e92f8a2f1a3f972f61fdc1bf4a4b1fd.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>836e46477684</span><span class=loss>L=0.714</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#12 <b>grad cos -0.644</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/6388041259ba089a7a9b23b59d2eeb90dbc6f95c03d0afbc2a77147872dfb318
+loss 0.773  depth 0.386
+||g|| 22.15"><img src="thumbs/1K_6388041259ba089a7a9b23b59d2eeb90dbc6f95c03d0afbc2a77147872dfb318.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>6388041259ba</span><span class=loss>L=0.773</span></figcaption></figure><figure title="dl3dv/1K/6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab
+loss 0.518  depth 0.245
+||g|| 26.73"><img src="thumbs/1K_6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>6c4500cef98b</span><span class=loss>L=0.518</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#13 <b>grad cos -0.643</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc
+loss 0.677  depth 0.322
+||g|| 27.67"><img src="thumbs/1K_5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>5b240cc17740</span><span class=loss>L=0.677</span></figcaption></figure><figure title="dl3dv/1K/6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab
+loss 0.518  depth 0.245
+||g|| 26.73"><img src="thumbs/1K_6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>6c4500cef98b</span><span class=loss>L=0.518</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#14 <b>grad cos -0.639</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc
+loss 0.984  depth 0.373
+||g|| 29.03"><img src="thumbs/1K_30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>30844e7aaec5</span><span class=loss>L=0.984</span></figcaption></figure><figure title="dl3dv/1K/833f8228e89cadef697f2f21bfc22ee43834e4c7d0b099c2764d96933f4e0d28
+loss 0.561  depth 0.264
+||g|| 33.52"><img src="thumbs/1K_833f8228e89cadef697f2f21bfc22ee43834e4c7d0b099c2764d96933f4e0d28.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>833f8228e89c</span><span class=loss>L=0.561</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#15 <b>grad cos -0.638</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/321fe8644075508ebcab09093dba8b781b63ca7284a2542a857a694824cbe1a0
+loss 0.849  depth 0.440
+||g|| 15.87"><img src="thumbs/1K_321fe8644075508ebcab09093dba8b781b63ca7284a2542a857a694824cbe1a0.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>321fe8644075</span><span class=loss>L=0.849</span></figcaption></figure><figure title="dl3dv/1K/796e5813db9424f0955a7f5ba81c6b22dab9834b2d57590b5fbb2b043933608d
+loss 1.154  depth 0.480
+||g|| 16.72"><img src="thumbs/1K_796e5813db9424f0955a7f5ba81c6b22dab9834b2d57590b5fbb2b043933608d.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>796e5813db94</span><span class=loss>L=1.154</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#16 <b>grad cos -0.634</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/1a8066e07d8ddadb41b8a5dd7fd9519e6375c3023d2546b3fd3bf99878340ef6
+loss 1.505  depth 0.519
+||g|| 13.67"><img src="thumbs/1K_1a8066e07d8ddadb41b8a5dd7fd9519e6375c3023d2546b3fd3bf99878340ef6.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>1a8066e07d8d</span><span class=loss>L=1.505</span></figcaption></figure><figure title="dl3dv/1K/2bf69e545ec073e22153cf50e681f145468f2f9d509ad8cd8bcd946d3605ff40
+loss 0.993  depth 0.531
+||g|| 18.90"><img src="thumbs/1K_2bf69e545ec073e22153cf50e681f145468f2f9d509ad8cd8bcd946d3605ff40.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>2bf69e545ec0</span><span class=loss>L=0.993</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#17 <b>grad cos -0.632</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/04dc353499a2cc18d2a89d5d61e99ef91dba62adcb1767566f883ad37677ba5a
+loss 0.678  depth 0.287
+||g|| 21.66"><img src="thumbs/1K_04dc353499a2cc18d2a89d5d61e99ef91dba62adcb1767566f883ad37677ba5a.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>04dc353499a2</span><span class=loss>L=0.678</span></figcaption></figure><figure title="dl3dv/1K/4c57109dcbce7a11953532673415ece17f85e4429894628c925be678bf0d92b2
+loss 0.917  depth 0.479
+||g|| 22.35"><img src="thumbs/1K_4c57109dcbce7a11953532673415ece17f85e4429894628c925be678bf0d92b2.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>4c57109dcbce</span><span class=loss>L=0.917</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#18 <b>grad cos -0.630</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/00def8c08b0a092efa8b6aa444f1bb411333d6bdc7926885c7a72680d189a3c8
+loss 0.919  depth 0.571
+||g|| 17.50"><img src="thumbs/1K_00def8c08b0a092efa8b6aa444f1bb411333d6bdc7926885c7a72680d189a3c8.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>00def8c08b0a</span><span class=loss>L=0.919</span></figcaption></figure><figure title="dl3dv/1K/4d5f2c68dd8928c1d08c9598fe8d180cfcfdf473fe25cbfba4cb9e626b834ea4
+loss 1.200  depth 0.306
+||g|| 23.59"><img src="thumbs/1K_4d5f2c68dd8928c1d08c9598fe8d180cfcfdf473fe25cbfba4cb9e626b834ea4.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>4d5f2c68dd89</span><span class=loss>L=1.200</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#19 <b>grad cos -0.629</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/008c201a7eff27ce0413f7931a48e92cf05ded9d9b7cf16cc2276ff3b80c7b22
+loss 0.812  depth 0.409
+||g|| 14.79"><img src="thumbs/1K_008c201a7eff27ce0413f7931a48e92cf05ded9d9b7cf16cc2276ff3b80c7b22.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>008c201a7eff</span><span class=loss>L=0.812</span></figcaption></figure><figure title="dl3dv/1K/3fae5e0bb1354fe30a0a23934ab00c7a51004027cc79ae1205f910b7bdefd33f
+loss 1.073  depth 0.429
+||g|| 28.19"><img src="thumbs/1K_3fae5e0bb1354fe30a0a23934ab00c7a51004027cc79ae1205f910b7bdefd33f.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>3fae5e0bb135</span><span class=loss>L=1.073</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#20 <b>grad cos -0.618</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/2937ca48a893ecfaed07fc0f2d42fe231869ed9a955c0b8629a9e55defa27676
+loss 1.374  depth 0.463
+||g|| 27.11"><img src="thumbs/1K_2937ca48a893ecfaed07fc0f2d42fe231869ed9a955c0b8629a9e55defa27676.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>2937ca48a893</span><span class=loss>L=1.374</span></figcaption></figure><figure title="dl3dv/1K/6388041259ba089a7a9b23b59d2eeb90dbc6f95c03d0afbc2a77147872dfb318
+loss 0.773  depth 0.386
+||g|| 22.15"><img src="thumbs/1K_6388041259ba089a7a9b23b59d2eeb90dbc6f95c03d0afbc2a77147872dfb318.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>6388041259ba</span><span class=loss>L=0.773</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#21 <b>grad cos -0.614</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/077de0554f2217ec92dfd64b78e8036aa2ea8349819aef924e77beedd975a51c
+loss 1.513  depth 0.596
+||g|| 24.89"><img src="thumbs/1K_077de0554f2217ec92dfd64b78e8036aa2ea8349819aef924e77beedd975a51c.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>077de0554f22</span><span class=loss>L=1.513</span></figcaption></figure><figure title="dl3dv/1K/30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc
+loss 0.984  depth 0.373
+||g|| 29.03"><img src="thumbs/1K_30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>30844e7aaec5</span><span class=loss>L=0.984</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#22 <b>grad cos -0.614</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/00534f5868a6f72e77befbdb06e35ee9dc34e175dddf0e64e8b1922e494c8e24
+loss 0.949  depth 0.483
+||g|| 21.02"><img src="thumbs/1K_00534f5868a6f72e77befbdb06e35ee9dc34e175dddf0e64e8b1922e494c8e24.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>00534f5868a6</span><span class=loss>L=0.949</span></figcaption></figure><figure title="dl3dv/1K/4d5f2c68dd8928c1d08c9598fe8d180cfcfdf473fe25cbfba4cb9e626b834ea4
+loss 1.200  depth 0.306
+||g|| 23.59"><img src="thumbs/1K_4d5f2c68dd8928c1d08c9598fe8d180cfcfdf473fe25cbfba4cb9e626b834ea4.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>4d5f2c68dd89</span><span class=loss>L=1.200</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#23 <b>grad cos -0.614</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/1bd8b664e906ab3b3081a9e0adc03fb5a26676d43b21fc6132547df33f80d15a
+loss 1.023  depth 0.541
+||g|| 23.66"><img src="thumbs/1K_1bd8b664e906ab3b3081a9e0adc03fb5a26676d43b21fc6132547df33f80d15a.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>1bd8b664e906</span><span class=loss>L=1.023</span></figcaption></figure><figure title="dl3dv/1K/3db82e7ffc5c7351031e0f5ff1e11313bbbd67e3d91368a2c71beeab1399e114
+loss 0.922  depth 0.484
+||g|| 11.44"><img src="thumbs/1K_3db82e7ffc5c7351031e0f5ff1e11313bbbd67e3d91368a2c71beeab1399e114.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>3db82e7ffc5c</span><span class=loss>L=0.922</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#24 <b>grad cos -0.611</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/00def8c08b0a092efa8b6aa444f1bb411333d6bdc7926885c7a72680d189a3c8
+loss 0.919  depth 0.571
+||g|| 17.50"><img src="thumbs/1K_00def8c08b0a092efa8b6aa444f1bb411333d6bdc7926885c7a72680d189a3c8.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>00def8c08b0a</span><span class=loss>L=0.919</span></figcaption></figure><figure title="dl3dv/1K/533675f8de0766a796d35aaeb54cebb90c06ab82cdd5047ca62c3685dfbb777b
+loss 0.948  depth 0.459
+||g|| 18.10"><img src="thumbs/1K_533675f8de0766a796d35aaeb54cebb90c06ab82cdd5047ca62c3685dfbb777b.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>533675f8de07</span><span class=loss>L=0.948</span></figcaption></figure></div></section><section class=pair data-kind="bottom_grad"><h3>#25 <b>grad cos -0.610</b><span class=dim>bottom grad</span></h3><div class=row><figure title="dl3dv/1K/2036ef5406a4d39e23e7fbf19156f67112bb57c529611476a6835d3ce88148c9
+loss 0.804  depth 0.257
+||g|| 17.64"><img src="thumbs/1K_2036ef5406a4d39e23e7fbf19156f67112bb57c529611476a6835d3ce88148c9.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>2036ef5406a4</span><span class=loss>L=0.804</span></figcaption></figure><figure title="dl3dv/1K/2dfe7527a94e2122a660d43c1be38ab05262d8c3bfa9ad6676250567c063a2c7
+loss 0.682  depth 0.288
+||g|| 19.45"><img src="thumbs/1K_2dfe7527a94e2122a660d43c1be38ab05262d8c3bfa9ad6676250567c063a2c7.jpg" width=220><figcaption><span class=s>dl3dv</span><span class=id>2dfe7527a94e</span><span class=loss>L=0.682</span></figcaption></figure></div></section>

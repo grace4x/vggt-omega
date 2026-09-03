@@ -1,0 +1,1744 @@
+{
+  "checkpoint": "runs/default/final.pt",
+  "step": 30000,
+  "n_scenes": 500,
+  "stats": {
+    "median_cos": 0.0011299229227006435,
+    "mean_cos": 0.0024102978914787615,
+    "min_cos": -0.7399643659591675,
+    "max_cos": 0.8182273507118225,
+    "n_pairs": 124750.0
+  },
+  "top_pairs": [
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.8182273507118225,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "5bccb54fa2654f8caeb6ebdec31dc15f894165ef92d8952f84b5e47d1c8f6284",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.45117509365081787,
+        "loss_depth": 0.2063550502061844,
+        "grad_norm": 22.8341845620412,
+        "thumb": "thumbs/1K_5bccb54fa2654f8caeb6ebdec31dc15f894165ef92d8952f84b5e47d1c8f6284.jpg"
+      },
+      "b": {
+        "scene_id": "5f3b51b30dad3570fb341bca570d65f4f17d13cd86572d8389d50621eb18c811",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.397816926240921,
+        "loss_depth": 0.1519259214401245,
+        "grad_norm": 19.64434182362927,
+        "thumb": "thumbs/1K_5f3b51b30dad3570fb341bca570d65f4f17d13cd86572d8389d50621eb18c811.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.7640405893325806,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "00534f5868a6f72e77befbdb06e35ee9dc34e175dddf0e64e8b1922e494c8e24",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9491100311279297,
+        "loss_depth": 0.4831990599632263,
+        "grad_norm": 21.020211303616545,
+        "thumb": "thumbs/1K_00534f5868a6f72e77befbdb06e35ee9dc34e175dddf0e64e8b1922e494c8e24.jpg"
+      },
+      "b": {
+        "scene_id": "00def8c08b0a092efa8b6aa444f1bb411333d6bdc7926885c7a72680d189a3c8",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9192526340484619,
+        "loss_depth": 0.5711095929145813,
+        "grad_norm": 17.501514295385004,
+        "thumb": "thumbs/1K_00def8c08b0a092efa8b6aa444f1bb411333d6bdc7926885c7a72680d189a3c8.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.727202296257019,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "5454b71d612cc2b020e60bd2d8a018dc33d62b5fbd5c041b55a752480a8a97ba",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.5435525178909302,
+        "loss_depth": 0.24850261211395264,
+        "grad_norm": 16.045385096886267,
+        "thumb": "thumbs/1K_5454b71d612cc2b020e60bd2d8a018dc33d62b5fbd5c041b55a752480a8a97ba.jpg"
+      },
+      "b": {
+        "scene_id": "833f8228e89cadef697f2f21bfc22ee43834e4c7d0b099c2764d96933f4e0d28",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.5612492561340332,
+        "loss_depth": 0.2637750506401062,
+        "grad_norm": 33.520980593981236,
+        "thumb": "thumbs/1K_833f8228e89cadef697f2f21bfc22ee43834e4c7d0b099c2764d96933f4e0d28.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.6967595815658569,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "5f3b51b30dad3570fb341bca570d65f4f17d13cd86572d8389d50621eb18c811",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.397816926240921,
+        "loss_depth": 0.1519259214401245,
+        "grad_norm": 19.64434182362927,
+        "thumb": "thumbs/1K_5f3b51b30dad3570fb341bca570d65f4f17d13cd86572d8389d50621eb18c811.jpg"
+      },
+      "b": {
+        "scene_id": "70a692eef9fc193dd6a6a872de4b03bba157b9c7c8342a125810d112028745a8",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.7156966924667358,
+        "loss_depth": 0.2749894857406616,
+        "grad_norm": 20.55821687063945,
+        "thumb": "thumbs/1K_70a692eef9fc193dd6a6a872de4b03bba157b9c7c8342a125810d112028745a8.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.6935843229293823,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "1bd8b664e906ab3b3081a9e0adc03fb5a26676d43b21fc6132547df33f80d15a",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.0231444835662842,
+        "loss_depth": 0.5410066843032837,
+        "grad_norm": 23.663258032875202,
+        "thumb": "thumbs/1K_1bd8b664e906ab3b3081a9e0adc03fb5a26676d43b21fc6132547df33f80d15a.jpg"
+      },
+      "b": {
+        "scene_id": "66368af692b290a16426f6f0bbac527152f740406c3ceb5e47d5a62a645d4a0a",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.5478404760360718,
+        "loss_depth": 0.2496974915266037,
+        "grad_norm": 23.498518712359722,
+        "thumb": "thumbs/1K_66368af692b290a16426f6f0bbac527152f740406c3ceb5e47d5a62a645d4a0a.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.6882196664810181,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "4c57109dcbce7a11953532673415ece17f85e4429894628c925be678bf0d92b2",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9168590903282166,
+        "loss_depth": 0.4787946045398712,
+        "grad_norm": 22.35223395109899,
+        "thumb": "thumbs/1K_4c57109dcbce7a11953532673415ece17f85e4429894628c925be678bf0d92b2.jpg"
+      },
+      "b": {
+        "scene_id": "4d5f2c68dd8928c1d08c9598fe8d180cfcfdf473fe25cbfba4cb9e626b834ea4",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.1996755599975586,
+        "loss_depth": 0.3061993718147278,
+        "grad_norm": 23.587914177744743,
+        "thumb": "thumbs/1K_4d5f2c68dd8928c1d08c9598fe8d180cfcfdf473fe25cbfba4cb9e626b834ea4.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.6855573654174805,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "2d5fe1fea18fb4903e7b5256a1c3f9a175be5d9f78da6722e5d46c9795d7de10",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.360598087310791,
+        "loss_depth": 0.6959894895553589,
+        "grad_norm": 32.3912468731255,
+        "thumb": "thumbs/1K_2d5fe1fea18fb4903e7b5256a1c3f9a175be5d9f78da6722e5d46c9795d7de10.jpg"
+      },
+      "b": {
+        "scene_id": "30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9840136766433716,
+        "loss_depth": 0.373430997133255,
+        "grad_norm": 29.029346243491226,
+        "thumb": "thumbs/1K_30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.6834150552749634,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "209c06fcb60c853761e01e9469d850bd090b44da7bda4cf1856f5d37a7b81429",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.6543187499046326,
+        "loss_depth": 0.2309991717338562,
+        "grad_norm": 16.385427762413723,
+        "thumb": "thumbs/1K_209c06fcb60c853761e01e9469d850bd090b44da7bda4cf1856f5d37a7b81429.jpg"
+      },
+      "b": {
+        "scene_id": "48ed9f937b96e95b934d414e1b265a14087378c36460976c3ac8eb3fb2804502",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9099839925765991,
+        "loss_depth": 0.3302960693836212,
+        "grad_norm": 15.552130588796391,
+        "thumb": "thumbs/1K_48ed9f937b96e95b934d414e1b265a14087378c36460976c3ac8eb3fb2804502.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.6788429021835327,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.518191933631897,
+        "loss_depth": 0.24464033544063568,
+        "grad_norm": 26.725161087202537,
+        "thumb": "thumbs/1K_6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab.jpg"
+      },
+      "b": {
+        "scene_id": "7068884ae9a274324641cfe7744b98bb4c56906fa47d9dbdacdf02731fad477d",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.45505720376968384,
+        "loss_depth": 0.22916483879089355,
+        "grad_norm": 17.644772772003787,
+        "thumb": "thumbs/1K_7068884ae9a274324641cfe7744b98bb4c56906fa47d9dbdacdf02731fad477d.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.678654670715332,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "5a27c00f525f5484b7aa0d0107051253bf7bb395bde0b3a4486ff8c52fb4965e",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.8336957693099976,
+        "loss_depth": 0.4237154424190521,
+        "grad_norm": 21.220110237666724,
+        "thumb": "thumbs/1K_5a27c00f525f5484b7aa0d0107051253bf7bb395bde0b3a4486ff8c52fb4965e.jpg"
+      },
+      "b": {
+        "scene_id": "5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.6768945455551147,
+        "loss_depth": 0.32242053747177124,
+        "grad_norm": 27.670790489212678,
+        "thumb": "thumbs/1K_5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.6754809021949768,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9840136766433716,
+        "loss_depth": 0.373430997133255,
+        "grad_norm": 29.029346243491226,
+        "thumb": "thumbs/1K_30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc.jpg"
+      },
+      "b": {
+        "scene_id": "6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.518191933631897,
+        "loss_depth": 0.24464033544063568,
+        "grad_norm": 26.725161087202537,
+        "thumb": "thumbs/1K_6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.6735206246376038,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "5a27c00f525f5484b7aa0d0107051253bf7bb395bde0b3a4486ff8c52fb4965e",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.8336957693099976,
+        "loss_depth": 0.4237154424190521,
+        "grad_norm": 21.220110237666724,
+        "thumb": "thumbs/1K_5a27c00f525f5484b7aa0d0107051253bf7bb395bde0b3a4486ff8c52fb4965e.jpg"
+      },
+      "b": {
+        "scene_id": "833f8228e89cadef697f2f21bfc22ee43834e4c7d0b099c2764d96933f4e0d28",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.5612492561340332,
+        "loss_depth": 0.2637750506401062,
+        "grad_norm": 33.520980593981236,
+        "thumb": "thumbs/1K_833f8228e89cadef697f2f21bfc22ee43834e4c7d0b099c2764d96933f4e0d28.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.6696939468383789,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "1b331d86ed9501a65135172a15348b6c823f6808ccc93fcc89d7c3b2eb19f6c5",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.5249576568603516,
+        "loss_depth": 0.2700773775577545,
+        "grad_norm": 24.04055269314374,
+        "thumb": "thumbs/1K_1b331d86ed9501a65135172a15348b6c823f6808ccc93fcc89d7c3b2eb19f6c5.jpg"
+      },
+      "b": {
+        "scene_id": "5b1e56386e263f2324365d2c623d6b746280aa4f5a6257bb0ba66e5dff135c8a",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.7271920442581177,
+        "loss_depth": 0.3307611346244812,
+        "grad_norm": 18.455337291026407,
+        "thumb": "thumbs/1K_5b1e56386e263f2324365d2c623d6b746280aa4f5a6257bb0ba66e5dff135c8a.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.6695481538772583,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "35705a35213165b89ff8f7c9355c523634c2aa513c7e86c737b7d3d2a7d6317f",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.1601519584655762,
+        "loss_depth": 0.48591363430023193,
+        "grad_norm": 25.498510343851162,
+        "thumb": "thumbs/1K_35705a35213165b89ff8f7c9355c523634c2aa513c7e86c737b7d3d2a7d6317f.jpg"
+      },
+      "b": {
+        "scene_id": "6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.518191933631897,
+        "loss_depth": 0.24464033544063568,
+        "grad_norm": 26.725161087202537,
+        "thumb": "thumbs/1K_6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.6657875180244446,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.6768945455551147,
+        "loss_depth": 0.32242053747177124,
+        "grad_norm": 27.670790489212678,
+        "thumb": "thumbs/1K_5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc.jpg"
+      },
+      "b": {
+        "scene_id": "6388041259ba089a7a9b23b59d2eeb90dbc6f95c03d0afbc2a77147872dfb318",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.7726225256919861,
+        "loss_depth": 0.38573554158210754,
+        "grad_norm": 22.14717406323423,
+        "thumb": "thumbs/1K_6388041259ba089a7a9b23b59d2eeb90dbc6f95c03d0afbc2a77147872dfb318.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.6638343930244446,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9840136766433716,
+        "loss_depth": 0.373430997133255,
+        "grad_norm": 29.029346243491226,
+        "thumb": "thumbs/1K_30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc.jpg"
+      },
+      "b": {
+        "scene_id": "5f3b51b30dad3570fb341bca570d65f4f17d13cd86572d8389d50621eb18c811",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.397816926240921,
+        "loss_depth": 0.1519259214401245,
+        "grad_norm": 19.64434182362927,
+        "thumb": "thumbs/1K_5f3b51b30dad3570fb341bca570d65f4f17d13cd86572d8389d50621eb18c811.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.6636865139007568,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "4c57109dcbce7a11953532673415ece17f85e4429894628c925be678bf0d92b2",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9168590903282166,
+        "loss_depth": 0.4787946045398712,
+        "grad_norm": 22.35223395109899,
+        "thumb": "thumbs/1K_4c57109dcbce7a11953532673415ece17f85e4429894628c925be678bf0d92b2.jpg"
+      },
+      "b": {
+        "scene_id": "5667ec8da9e70c4404959562a1555b730638caf5487064220650fb7c9dc32f38",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.2373565435409546,
+        "loss_depth": 0.5135603547096252,
+        "grad_norm": 21.409028965609895,
+        "thumb": "thumbs/1K_5667ec8da9e70c4404959562a1555b730638caf5487064220650fb7c9dc32f38.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.6611047387123108,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "077de0554f2217ec92dfd64b78e8036aa2ea8349819aef924e77beedd975a51c",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.5129239559173584,
+        "loss_depth": 0.5963994860649109,
+        "grad_norm": 24.887817880207024,
+        "thumb": "thumbs/1K_077de0554f2217ec92dfd64b78e8036aa2ea8349819aef924e77beedd975a51c.jpg"
+      },
+      "b": {
+        "scene_id": "833f8228e89cadef697f2f21bfc22ee43834e4c7d0b099c2764d96933f4e0d28",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.5612492561340332,
+        "loss_depth": 0.2637750506401062,
+        "grad_norm": 33.520980593981236,
+        "thumb": "thumbs/1K_833f8228e89cadef697f2f21bfc22ee43834e4c7d0b099c2764d96933f4e0d28.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.6604570746421814,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "674efe8102d134fd38f98f5654d9981c23661d6adf2243f4aca4c3943ab57369",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.632189154624939,
+        "loss_depth": 0.3244880735874176,
+        "grad_norm": 27.198019143046707,
+        "thumb": "thumbs/1K_674efe8102d134fd38f98f5654d9981c23661d6adf2243f4aca4c3943ab57369.jpg"
+      },
+      "b": {
+        "scene_id": "8789a930c89c48d9314165712420a8f77f7fb32fe5a44cfa66761e357addf0c5",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.5416402220726013,
+        "loss_depth": 0.2515530288219452,
+        "grad_norm": 14.967507987254523,
+        "thumb": "thumbs/1K_8789a930c89c48d9314165712420a8f77f7fb32fe5a44cfa66761e357addf0c5.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.660249650478363,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "185ed9cf241fb631c5cf3202661d66a7b1d0c3a0dfc88cd228244c2942b844d7",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.3974337577819824,
+        "loss_depth": 0.3347170352935791,
+        "grad_norm": 24.327669167750898,
+        "thumb": "thumbs/1K_185ed9cf241fb631c5cf3202661d66a7b1d0c3a0dfc88cd228244c2942b844d7.jpg"
+      },
+      "b": {
+        "scene_id": "3fae5e0bb1354fe30a0a23934ab00c7a51004027cc79ae1205f910b7bdefd33f",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.0734314918518066,
+        "loss_depth": 0.4289315640926361,
+        "grad_norm": 28.190198738126362,
+        "thumb": "thumbs/1K_3fae5e0bb1354fe30a0a23934ab00c7a51004027cc79ae1205f910b7bdefd33f.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.6548752784729004,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "5a27c00f525f5484b7aa0d0107051253bf7bb395bde0b3a4486ff8c52fb4965e",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.8336957693099976,
+        "loss_depth": 0.4237154424190521,
+        "grad_norm": 21.220110237666724,
+        "thumb": "thumbs/1K_5a27c00f525f5484b7aa0d0107051253bf7bb395bde0b3a4486ff8c52fb4965e.jpg"
+      },
+      "b": {
+        "scene_id": "674efe8102d134fd38f98f5654d9981c23661d6adf2243f4aca4c3943ab57369",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.632189154624939,
+        "loss_depth": 0.3244880735874176,
+        "grad_norm": 27.198019143046707,
+        "thumb": "thumbs/1K_674efe8102d134fd38f98f5654d9981c23661d6adf2243f4aca4c3943ab57369.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.6523563265800476,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "48bbc292ae5da66f81c588b3d1ed515d0df661d1f28f5f56350a868ecd695592",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.755942702293396,
+        "loss_depth": 0.6331964731216431,
+        "grad_norm": 28.625974333035916,
+        "thumb": "thumbs/1K_48bbc292ae5da66f81c588b3d1ed515d0df661d1f28f5f56350a868ecd695592.jpg"
+      },
+      "b": {
+        "scene_id": "4d5f2c68dd8928c1d08c9598fe8d180cfcfdf473fe25cbfba4cb9e626b834ea4",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.1996755599975586,
+        "loss_depth": 0.3061993718147278,
+        "grad_norm": 23.587914177744743,
+        "thumb": "thumbs/1K_4d5f2c68dd8928c1d08c9598fe8d180cfcfdf473fe25cbfba4cb9e626b834ea4.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.6508114337921143,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "367f7d6f6c886e6b2562344eee3959411fdf300f6cf4996e612ab58b8c4e6aed",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.7947618961334229,
+        "loss_depth": 0.44627687335014343,
+        "grad_norm": 21.34613176682576,
+        "thumb": "thumbs/1K_367f7d6f6c886e6b2562344eee3959411fdf300f6cf4996e612ab58b8c4e6aed.jpg"
+      },
+      "b": {
+        "scene_id": "5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.6768945455551147,
+        "loss_depth": 0.32242053747177124,
+        "grad_norm": 27.670790489212678,
+        "thumb": "thumbs/1K_5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.6504546999931335,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.6768945455551147,
+        "loss_depth": 0.32242053747177124,
+        "grad_norm": 27.670790489212678,
+        "thumb": "thumbs/1K_5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc.jpg"
+      },
+      "b": {
+        "scene_id": "674efe8102d134fd38f98f5654d9981c23661d6adf2243f4aca4c3943ab57369",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.632189154624939,
+        "loss_depth": 0.3244880735874176,
+        "grad_norm": 27.198019143046707,
+        "thumb": "thumbs/1K_674efe8102d134fd38f98f5654d9981c23661d6adf2243f4aca4c3943ab57369.jpg"
+      }
+    },
+    {
+      "kind": "top_grad",
+      "grad_cosine": 0.649796724319458,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "137b1f244a6eeaa52119c1be2cdf13516dd5a1ee5b5df2c25a13ce777a25610e",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9084495902061462,
+        "loss_depth": 0.4256061911582947,
+        "grad_norm": 18.08099697946102,
+        "thumb": "thumbs/1K_137b1f244a6eeaa52119c1be2cdf13516dd5a1ee5b5df2c25a13ce777a25610e.jpg"
+      },
+      "b": {
+        "scene_id": "84b5d25838c24f8875a66aa61d99ac42ea91782fe7fe7089764a981edd6ed390",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.7142053246498108,
+        "loss_depth": 0.4067830741405487,
+        "grad_norm": 15.661790021093502,
+        "thumb": "thumbs/1K_84b5d25838c24f8875a66aa61d99ac42ea91782fe7fe7089764a981edd6ed390.jpg"
+      }
+    }
+  ],
+  "middle_pairs": [
+    {
+      "kind": "middle_grad",
+      "grad_cosine": -0.02974848449230194,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "6faf38ca085f50c565660dbe7513d069c57caaa3b2970bb1605fc641dfbef10d",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.180996298789978,
+        "loss_depth": 0.3325866162776947,
+        "grad_norm": 28.353015679822118,
+        "thumb": "thumbs/1K_6faf38ca085f50c565660dbe7513d069c57caaa3b2970bb1605fc641dfbef10d.jpg"
+      },
+      "b": {
+        "scene_id": "scene0084_02",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 2.4747114181518555,
+        "loss_depth": 0.46633458137512207,
+        "grad_norm": 28.090345532528172,
+        "thumb": "thumbs/scannet_scene0084_02.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": -0.02674364484846592,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "scene0025_01",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 1.7904224395751953,
+        "loss_depth": 0.2955521047115326,
+        "grad_norm": 79.69799717333295,
+        "thumb": "thumbs/scannet_scene0025_01.jpg"
+      },
+      "b": {
+        "scene_id": "scene0076_00",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 0.58481764793396,
+        "loss_depth": 0.1872658133506775,
+        "grad_norm": 20.02821347500169,
+        "thumb": "thumbs/scannet_scene0076_00.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": -0.02382725104689598,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "534dd8e7547c63758476ce918c925b026993817adfd9b2b51596c9e46f1aa4a0",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.7301907539367676,
+        "loss_depth": 0.3303776979446411,
+        "grad_norm": 19.54802730363616,
+        "thumb": "thumbs/1K_534dd8e7547c63758476ce918c925b026993817adfd9b2b51596c9e46f1aa4a0.jpg"
+      },
+      "b": {
+        "scene_id": "scene0074_01",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 1.3504862785339355,
+        "loss_depth": 0.30571886897087097,
+        "grad_norm": 15.983636513265246,
+        "thumb": "thumbs/scannet_scene0074_01.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": -0.02092130482196808,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "scene0114_02",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 1.2615535259246826,
+        "loss_depth": 0.29597216844558716,
+        "grad_norm": 20.56075766098131,
+        "thumb": "thumbs/scannet_scene0114_02.jpg"
+      },
+      "b": {
+        "scene_id": "scene0176_00",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 1.236011266708374,
+        "loss_depth": 0.31850799918174744,
+        "grad_norm": 21.621710092607742,
+        "thumb": "thumbs/scannet_scene0176_00.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": -0.01825658231973648,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "4a4114deef7eac9377f55eafae5d5e5794335795ec68c7e101adb9d6a7d95d60",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.0479660034179688,
+        "loss_depth": 0.4547695219516754,
+        "grad_norm": 22.213485831050328,
+        "thumb": "thumbs/1K_4a4114deef7eac9377f55eafae5d5e5794335795ec68c7e101adb9d6a7d95d60.jpg"
+      },
+      "b": {
+        "scene_id": "scene0161_02",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 0.6079337000846863,
+        "loss_depth": 0.19730791449546814,
+        "grad_norm": 23.85807383888139,
+        "thumb": "thumbs/scannet_scene0161_02.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": -0.015758991241455078,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "4866c877a521a9c8c97f6fe724b03db03d3572d0737ba9b19d8668adecc05d27",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.5842773914337158,
+        "loss_depth": 0.30855149030685425,
+        "grad_norm": 16.856022098949325,
+        "thumb": "thumbs/1K_4866c877a521a9c8c97f6fe724b03db03d3572d0737ba9b19d8668adecc05d27.jpg"
+      },
+      "b": {
+        "scene_id": "scene0195_00",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 1.34130859375,
+        "loss_depth": 0.16909530758857727,
+        "grad_norm": 22.118520181195237,
+        "thumb": "thumbs/scannet_scene0195_00.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": -0.013198763132095337,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "scene0072_00",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 1.1632388830184937,
+        "loss_depth": 0.20864970982074738,
+        "grad_norm": 106.60001006870424,
+        "thumb": "thumbs/scannet_scene0072_00.jpg"
+      },
+      "b": {
+        "scene_id": "scene0160_00",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 2.201019287109375,
+        "loss_depth": 0.40828391909599304,
+        "grad_norm": 34.19741316481207,
+        "thumb": "thumbs/scannet_scene0160_00.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": -0.010792634449899197,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "5bccb54fa2654f8caeb6ebdec31dc15f894165ef92d8952f84b5e47d1c8f6284",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.45117509365081787,
+        "loss_depth": 0.2063550502061844,
+        "grad_norm": 22.8341845620412,
+        "thumb": "thumbs/1K_5bccb54fa2654f8caeb6ebdec31dc15f894165ef92d8952f84b5e47d1c8f6284.jpg"
+      },
+      "b": {
+        "scene_id": "scene0185_00",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 1.0059609413146973,
+        "loss_depth": 0.22118715941905975,
+        "grad_norm": 22.52675339740024,
+        "thumb": "thumbs/scannet_scene0185_00.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": -0.00832461193203926,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "scene0196_00",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 2.0447463989257812,
+        "loss_depth": 0.20711037516593933,
+        "grad_norm": 35.35353760976562,
+        "thumb": "thumbs/scannet_scene0196_00.jpg"
+      },
+      "b": {
+        "scene_id": "scene0241_00",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 1.1426594257354736,
+        "loss_depth": 0.11348150670528412,
+        "grad_norm": 11.936606399211218,
+        "thumb": "thumbs/scannet_scene0241_00.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": -0.005951926112174988,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "6ed1058f96df97f1c8175739843cf0f272ce0c60c5727dbb010a3a0fac3ef10d",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9023333787918091,
+        "loss_depth": 0.40426570177078247,
+        "grad_norm": 19.35716095765693,
+        "thumb": "thumbs/1K_6ed1058f96df97f1c8175739843cf0f272ce0c60c5727dbb010a3a0fac3ef10d.jpg"
+      },
+      "b": {
+        "scene_id": "scene0240_00",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 1.56295645236969,
+        "loss_depth": 0.27491289377212524,
+        "grad_norm": 21.936737054392818,
+        "thumb": "thumbs/scannet_scene0240_00.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": -0.003535369411110878,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "scene0025_00",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 1.4049713611602783,
+        "loss_depth": 0.25264984369277954,
+        "grad_norm": 24.60230674192938,
+        "thumb": "thumbs/scannet_scene0025_00.jpg"
+      },
+      "b": {
+        "scene_id": "scene0065_02",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 2.989429235458374,
+        "loss_depth": 0.6865572929382324,
+        "grad_norm": 29.62078286384559,
+        "thumb": "thumbs/scannet_scene0065_02.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": -0.0012022911105304956,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "2991a75d1f0fb2b7a891d424fc2459bb954b61599b52e74a056a7acfb2998b77",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.237820029258728,
+        "loss_depth": 0.6001810431480408,
+        "grad_norm": 18.4030746848382,
+        "thumb": "thumbs/1K_2991a75d1f0fb2b7a891d424fc2459bb954b61599b52e74a056a7acfb2998b77.jpg"
+      },
+      "b": {
+        "scene_id": "scene0183_00",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 0.6853197813034058,
+        "loss_depth": 0.17611993849277496,
+        "grad_norm": 16.707174592290393,
+        "thumb": "thumbs/scannet_scene0183_00.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": 0.0011316463351249695,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "2823b1312d78d4808cdd886baf307d6cdea9799a9fbd9eaf8d9f7269b53fac16",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.1440975666046143,
+        "loss_depth": 0.49490615725517273,
+        "grad_norm": 16.553554047366738,
+        "thumb": "thumbs/1K_2823b1312d78d4808cdd886baf307d6cdea9799a9fbd9eaf8d9f7269b53fac16.jpg"
+      },
+      "b": {
+        "scene_id": "scene0215_00",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 2.4945437908172607,
+        "loss_depth": 0.32682445645332336,
+        "grad_norm": 35.68137456429125,
+        "thumb": "thumbs/scannet_scene0215_00.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": 0.0034131966531276703,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "59e01f4fb653f2251febf78e5fbd39e42a6754e2bffb86cde31842821235291e",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.4878780841827393,
+        "loss_depth": 0.4852338433265686,
+        "grad_norm": 21.099016712471435,
+        "thumb": "thumbs/1K_59e01f4fb653f2251febf78e5fbd39e42a6754e2bffb86cde31842821235291e.jpg"
+      },
+      "b": {
+        "scene_id": "scene0008_00",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 3.402191162109375,
+        "loss_depth": 0.4655340611934662,
+        "grad_norm": 19.18476185036108,
+        "thumb": "thumbs/scannet_scene0008_00.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": 0.005677799228578806,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "3db82e7ffc5c7351031e0f5ff1e11313bbbd67e3d91368a2c71beeab1399e114",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9219388961791992,
+        "loss_depth": 0.4844510853290558,
+        "grad_norm": 11.44368180625935,
+        "thumb": "thumbs/1K_3db82e7ffc5c7351031e0f5ff1e11313bbbd67e3d91368a2c71beeab1399e114.jpg"
+      },
+      "b": {
+        "scene_id": "scene0164_01",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 1.4692742824554443,
+        "loss_depth": 0.16278187930583954,
+        "grad_norm": 31.49383192062015,
+        "thumb": "thumbs/scannet_scene0164_01.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": 0.008031708188354969,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "0850228cdbf7df721a10d73003db4b8d9d83e17c480b79a6d5d643eff6c8c163",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.5698244571685791,
+        "loss_depth": 0.2776254713535309,
+        "grad_norm": 15.172312853470714,
+        "thumb": "thumbs/1K_0850228cdbf7df721a10d73003db4b8d9d83e17c480b79a6d5d643eff6c8c163.jpg"
+      },
+      "b": {
+        "scene_id": "scene0155_02",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 2.24090313911438,
+        "loss_depth": 0.30702799558639526,
+        "grad_norm": 19.0952563751453,
+        "thumb": "thumbs/scannet_scene0155_02.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": 0.010441217571496964,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "23bf500882fabe2411e084765b364e32a47900759657478efcfe25ada37647d3",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.2314972877502441,
+        "loss_depth": 0.5805715918540955,
+        "grad_norm": 27.562064579901083,
+        "thumb": "thumbs/1K_23bf500882fabe2411e084765b364e32a47900759657478efcfe25ada37647d3.jpg"
+      },
+      "b": {
+        "scene_id": "scene0174_00",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 2.514998435974121,
+        "loss_depth": 0.7345139384269714,
+        "grad_norm": 43.45898902259513,
+        "thumb": "thumbs/scannet_scene0174_00.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": 0.01286337897181511,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "3af8037f9b5baa7ea38154f0d588f3d8eae65777b5e0d555209986cdb981fac2",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9292594194412231,
+        "loss_depth": 0.37210333347320557,
+        "grad_norm": 18.626176249411518,
+        "thumb": "thumbs/1K_3af8037f9b5baa7ea38154f0d588f3d8eae65777b5e0d555209986cdb981fac2.jpg"
+      },
+      "b": {
+        "scene_id": "scene0055_02",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 0.8770025968551636,
+        "loss_depth": 0.20509955286979675,
+        "grad_norm": 18.669683924707076,
+        "thumb": "thumbs/scannet_scene0055_02.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": 0.015323065221309662,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "23cdcd0cd5b44abb350ccbc6c780712d6b0c7af8143f8292f1d3e8ecfc9f4edd",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.8260198831558228,
+        "loss_depth": 0.32333874702453613,
+        "grad_norm": 16.516384053500623,
+        "thumb": "thumbs/1K_23cdcd0cd5b44abb350ccbc6c780712d6b0c7af8143f8292f1d3e8ecfc9f4edd.jpg"
+      },
+      "b": {
+        "scene_id": "scene0125_00",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 2.320493698120117,
+        "loss_depth": 0.46062323451042175,
+        "grad_norm": 20.661424805874734,
+        "thumb": "thumbs/scannet_scene0125_00.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": 0.017928482964634895,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "1bef58393fffbf6e34cac11d0b03dd22f65954a1668b7b9dec548f6ad44f29b5",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.7332881093025208,
+        "loss_depth": 0.3444494903087616,
+        "grad_norm": 11.272205308114026,
+        "thumb": "thumbs/1K_1bef58393fffbf6e34cac11d0b03dd22f65954a1668b7b9dec548f6ad44f29b5.jpg"
+      },
+      "b": {
+        "scene_id": "scene0106_02",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 0.6290390491485596,
+        "loss_depth": 0.24141213297843933,
+        "grad_norm": 26.350384973276412,
+        "thumb": "thumbs/scannet_scene0106_02.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": 0.020605171099305153,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "4866c877a521a9c8c97f6fe724b03db03d3572d0737ba9b19d8668adecc05d27",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.5842773914337158,
+        "loss_depth": 0.30855149030685425,
+        "grad_norm": 16.856022098949325,
+        "thumb": "thumbs/1K_4866c877a521a9c8c97f6fe724b03db03d3572d0737ba9b19d8668adecc05d27.jpg"
+      },
+      "b": {
+        "scene_id": "scene0183_00",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 0.6853197813034058,
+        "loss_depth": 0.17611993849277496,
+        "grad_norm": 16.707174592290393,
+        "thumb": "thumbs/scannet_scene0183_00.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": 0.02337196283042431,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "74b7ddc52fe4b580143896f86848dbb9c57b7290316e7d9bcf145accf70a663d",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.1580898761749268,
+        "loss_depth": 0.5216417908668518,
+        "grad_norm": 24.18238624637681,
+        "thumb": "thumbs/1K_74b7ddc52fe4b580143896f86848dbb9c57b7290316e7d9bcf145accf70a663d.jpg"
+      },
+      "b": {
+        "scene_id": "scene0113_00",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 1.030085802078247,
+        "loss_depth": 0.2319364845752716,
+        "grad_norm": 28.329359466687865,
+        "thumb": "thumbs/scannet_scene0113_00.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": 0.02626471407711506,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "842765cc9ac30a27672fa8d0281f7f0705f4cb410f65cd04059932e5dc538f85",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.4936749041080475,
+        "loss_depth": 0.23966264724731445,
+        "grad_norm": 17.364800878392426,
+        "thumb": "thumbs/1K_842765cc9ac30a27672fa8d0281f7f0705f4cb410f65cd04059932e5dc538f85.jpg"
+      },
+      "b": {
+        "scene_id": "scene0202_00",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 0.648626446723938,
+        "loss_depth": 0.1894826740026474,
+        "grad_norm": 14.758626939095528,
+        "thumb": "thumbs/scannet_scene0202_00.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": 0.029481925070285797,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "2d5fe1fea18fb4903e7b5256a1c3f9a175be5d9f78da6722e5d46c9795d7de10",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.360598087310791,
+        "loss_depth": 0.6959894895553589,
+        "grad_norm": 32.3912468731255,
+        "thumb": "thumbs/1K_2d5fe1fea18fb4903e7b5256a1c3f9a175be5d9f78da6722e5d46c9795d7de10.jpg"
+      },
+      "b": {
+        "scene_id": "scene0126_02",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 2.357637405395508,
+        "loss_depth": 0.3568918704986572,
+        "grad_norm": 46.92899093240452,
+        "thumb": "thumbs/scannet_scene0126_02.jpg"
+      }
+    },
+    {
+      "kind": "middle_grad",
+      "grad_cosine": 0.032621756196022034,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "23c7491248ce55b148e4bab59f0b752e4d3e86a047913ba2a938dfd7bcf4b798",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.471909999847412,
+        "loss_depth": 0.523325502872467,
+        "grad_norm": 36.73459479381541,
+        "thumb": "thumbs/1K_23c7491248ce55b148e4bab59f0b752e4d3e86a047913ba2a938dfd7bcf4b798.jpg"
+      },
+      "b": {
+        "scene_id": "scene0110_02",
+        "subset": "scannet",
+        "dataset": "scannet",
+        "loss": 0.5974026918411255,
+        "loss_depth": 0.16718097031116486,
+        "grad_norm": 29.204123279868686,
+        "thumb": "thumbs/scannet_scene0110_02.jpg"
+      }
+    }
+  ],
+  "bottom_pairs": [
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.7399643659591675,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "1b331d86ed9501a65135172a15348b6c823f6808ccc93fcc89d7c3b2eb19f6c5",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.5249576568603516,
+        "loss_depth": 0.2700773775577545,
+        "grad_norm": 24.04055269314374,
+        "thumb": "thumbs/1K_1b331d86ed9501a65135172a15348b6c823f6808ccc93fcc89d7c3b2eb19f6c5.jpg"
+      },
+      "b": {
+        "scene_id": "2f6b572215295f7e98c978f53dec261d471fa4cfb3e5f396984eafa8d68e8373",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.633515477180481,
+        "loss_depth": 0.2697524130344391,
+        "grad_norm": 33.94830668009584,
+        "thumb": "thumbs/1K_2f6b572215295f7e98c978f53dec261d471fa4cfb3e5f396984eafa8d68e8373.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.728206992149353,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "4281b610dba370ca4e96e7c381c0ec826b4b0d8f8c6f8b872c11b2253e7220e0",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.1195281744003296,
+        "loss_depth": 0.48270732164382935,
+        "grad_norm": 20.230332621015357,
+        "thumb": "thumbs/1K_4281b610dba370ca4e96e7c381c0ec826b4b0d8f8c6f8b872c11b2253e7220e0.jpg"
+      },
+      "b": {
+        "scene_id": "63a9850d72dd876094a203d6f439f0fdc5e9d593233e84007669b19b922e415a",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.7934735417366028,
+        "loss_depth": 0.41834864020347595,
+        "grad_norm": 17.717152869091635,
+        "thumb": "thumbs/1K_63a9850d72dd876094a203d6f439f0fdc5e9d593233e84007669b19b922e415a.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.7269123196601868,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "5a27c00f525f5484b7aa0d0107051253bf7bb395bde0b3a4486ff8c52fb4965e",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.8336957693099976,
+        "loss_depth": 0.4237154424190521,
+        "grad_norm": 21.220110237666724,
+        "thumb": "thumbs/1K_5a27c00f525f5484b7aa0d0107051253bf7bb395bde0b3a4486ff8c52fb4965e.jpg"
+      },
+      "b": {
+        "scene_id": "6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.518191933631897,
+        "loss_depth": 0.24464033544063568,
+        "grad_norm": 26.725161087202537,
+        "thumb": "thumbs/1K_6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.7012097835540771,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "35705a35213165b89ff8f7c9355c523634c2aa513c7e86c737b7d3d2a7d6317f",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.1601519584655762,
+        "loss_depth": 0.48591363430023193,
+        "grad_norm": 25.498510343851162,
+        "thumb": "thumbs/1K_35705a35213165b89ff8f7c9355c523634c2aa513c7e86c737b7d3d2a7d6317f.jpg"
+      },
+      "b": {
+        "scene_id": "5a27c00f525f5484b7aa0d0107051253bf7bb395bde0b3a4486ff8c52fb4965e",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.8336957693099976,
+        "loss_depth": 0.4237154424190521,
+        "grad_norm": 21.220110237666724,
+        "thumb": "thumbs/1K_5a27c00f525f5484b7aa0d0107051253bf7bb395bde0b3a4486ff8c52fb4965e.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.6965816617012024,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.518191933631897,
+        "loss_depth": 0.24464033544063568,
+        "grad_norm": 26.725161087202537,
+        "thumb": "thumbs/1K_6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab.jpg"
+      },
+      "b": {
+        "scene_id": "833f8228e89cadef697f2f21bfc22ee43834e4c7d0b099c2764d96933f4e0d28",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.5612492561340332,
+        "loss_depth": 0.2637750506401062,
+        "grad_norm": 33.520980593981236,
+        "thumb": "thumbs/1K_833f8228e89cadef697f2f21bfc22ee43834e4c7d0b099c2764d96933f4e0d28.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.6954705715179443,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9840136766433716,
+        "loss_depth": 0.373430997133255,
+        "grad_norm": 29.029346243491226,
+        "thumb": "thumbs/1K_30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc.jpg"
+      },
+      "b": {
+        "scene_id": "674efe8102d134fd38f98f5654d9981c23661d6adf2243f4aca4c3943ab57369",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.632189154624939,
+        "loss_depth": 0.3244880735874176,
+        "grad_norm": 27.198019143046707,
+        "thumb": "thumbs/1K_674efe8102d134fd38f98f5654d9981c23661d6adf2243f4aca4c3943ab57369.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.6887038946151733,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "0850228cdbf7df721a10d73003db4b8d9d83e17c480b79a6d5d643eff6c8c163",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.5698244571685791,
+        "loss_depth": 0.2776254713535309,
+        "grad_norm": 15.172312853470714,
+        "thumb": "thumbs/1K_0850228cdbf7df721a10d73003db4b8d9d83e17c480b79a6d5d643eff6c8c163.jpg"
+      },
+      "b": {
+        "scene_id": "23cdcd0cd5b44abb350ccbc6c780712d6b0c7af8143f8292f1d3e8ecfc9f4edd",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.8260198831558228,
+        "loss_depth": 0.32333874702453613,
+        "grad_norm": 16.516384053500623,
+        "thumb": "thumbs/1K_23cdcd0cd5b44abb350ccbc6c780712d6b0c7af8143f8292f1d3e8ecfc9f4edd.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.6784523129463196,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "6388041259ba089a7a9b23b59d2eeb90dbc6f95c03d0afbc2a77147872dfb318",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.7726225256919861,
+        "loss_depth": 0.38573554158210754,
+        "grad_norm": 22.14717406323423,
+        "thumb": "thumbs/1K_6388041259ba089a7a9b23b59d2eeb90dbc6f95c03d0afbc2a77147872dfb318.jpg"
+      },
+      "b": {
+        "scene_id": "7068884ae9a274324641cfe7744b98bb4c56906fa47d9dbdacdf02731fad477d",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.45505720376968384,
+        "loss_depth": 0.22916483879089355,
+        "grad_norm": 17.644772772003787,
+        "thumb": "thumbs/1K_7068884ae9a274324641cfe7744b98bb4c56906fa47d9dbdacdf02731fad477d.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.6523107290267944,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9840136766433716,
+        "loss_depth": 0.373430997133255,
+        "grad_norm": 29.029346243491226,
+        "thumb": "thumbs/1K_30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc.jpg"
+      },
+      "b": {
+        "scene_id": "5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.6768945455551147,
+        "loss_depth": 0.32242053747177124,
+        "grad_norm": 27.670790489212678,
+        "thumb": "thumbs/1K_5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.649040699005127,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9840136766433716,
+        "loss_depth": 0.373430997133255,
+        "grad_norm": 29.029346243491226,
+        "thumb": "thumbs/1K_30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc.jpg"
+      },
+      "b": {
+        "scene_id": "836e46477684b09ab2490144fcb20d262e92f8a2f1a3f972f61fdc1bf4a4b1fd",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.7135376930236816,
+        "loss_depth": 0.2528250813484192,
+        "grad_norm": 19.974117173438554,
+        "thumb": "thumbs/1K_836e46477684b09ab2490144fcb20d262e92f8a2f1a3f972f61fdc1bf4a4b1fd.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.64716637134552,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "2d5fe1fea18fb4903e7b5256a1c3f9a175be5d9f78da6722e5d46c9795d7de10",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.360598087310791,
+        "loss_depth": 0.6959894895553589,
+        "grad_norm": 32.3912468731255,
+        "thumb": "thumbs/1K_2d5fe1fea18fb4903e7b5256a1c3f9a175be5d9f78da6722e5d46c9795d7de10.jpg"
+      },
+      "b": {
+        "scene_id": "836e46477684b09ab2490144fcb20d262e92f8a2f1a3f972f61fdc1bf4a4b1fd",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.7135376930236816,
+        "loss_depth": 0.2528250813484192,
+        "grad_norm": 19.974117173438554,
+        "thumb": "thumbs/1K_836e46477684b09ab2490144fcb20d262e92f8a2f1a3f972f61fdc1bf4a4b1fd.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.6444151401519775,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "6388041259ba089a7a9b23b59d2eeb90dbc6f95c03d0afbc2a77147872dfb318",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.7726225256919861,
+        "loss_depth": 0.38573554158210754,
+        "grad_norm": 22.14717406323423,
+        "thumb": "thumbs/1K_6388041259ba089a7a9b23b59d2eeb90dbc6f95c03d0afbc2a77147872dfb318.jpg"
+      },
+      "b": {
+        "scene_id": "6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.518191933631897,
+        "loss_depth": 0.24464033544063568,
+        "grad_norm": 26.725161087202537,
+        "thumb": "thumbs/1K_6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.6425591111183167,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.6768945455551147,
+        "loss_depth": 0.32242053747177124,
+        "grad_norm": 27.670790489212678,
+        "thumb": "thumbs/1K_5b240cc177400655866fc1ee8c6b979c7c40353ea32461c2ca388696097454bc.jpg"
+      },
+      "b": {
+        "scene_id": "6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.518191933631897,
+        "loss_depth": 0.24464033544063568,
+        "grad_norm": 26.725161087202537,
+        "thumb": "thumbs/1K_6c4500cef98b618bc89e7c61516e32aa80515c7e0f4cb8103f3007a08d4062ab.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.6386469602584839,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9840136766433716,
+        "loss_depth": 0.373430997133255,
+        "grad_norm": 29.029346243491226,
+        "thumb": "thumbs/1K_30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc.jpg"
+      },
+      "b": {
+        "scene_id": "833f8228e89cadef697f2f21bfc22ee43834e4c7d0b099c2764d96933f4e0d28",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.5612492561340332,
+        "loss_depth": 0.2637750506401062,
+        "grad_norm": 33.520980593981236,
+        "thumb": "thumbs/1K_833f8228e89cadef697f2f21bfc22ee43834e4c7d0b099c2764d96933f4e0d28.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.6375309824943542,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "321fe8644075508ebcab09093dba8b781b63ca7284a2542a857a694824cbe1a0",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.8490088582038879,
+        "loss_depth": 0.44047775864601135,
+        "grad_norm": 15.86690139736534,
+        "thumb": "thumbs/1K_321fe8644075508ebcab09093dba8b781b63ca7284a2542a857a694824cbe1a0.jpg"
+      },
+      "b": {
+        "scene_id": "796e5813db9424f0955a7f5ba81c6b22dab9834b2d57590b5fbb2b043933608d",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.1543927192687988,
+        "loss_depth": 0.4801250696182251,
+        "grad_norm": 16.723894836390848,
+        "thumb": "thumbs/1K_796e5813db9424f0955a7f5ba81c6b22dab9834b2d57590b5fbb2b043933608d.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.634448230266571,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "1a8066e07d8ddadb41b8a5dd7fd9519e6375c3023d2546b3fd3bf99878340ef6",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.5048227310180664,
+        "loss_depth": 0.5186527967453003,
+        "grad_norm": 13.665026967612967,
+        "thumb": "thumbs/1K_1a8066e07d8ddadb41b8a5dd7fd9519e6375c3023d2546b3fd3bf99878340ef6.jpg"
+      },
+      "b": {
+        "scene_id": "2bf69e545ec073e22153cf50e681f145468f2f9d509ad8cd8bcd946d3605ff40",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9933982491493225,
+        "loss_depth": 0.5310742855072021,
+        "grad_norm": 18.90078481333826,
+        "thumb": "thumbs/1K_2bf69e545ec073e22153cf50e681f145468f2f9d509ad8cd8bcd946d3605ff40.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.632250189781189,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "04dc353499a2cc18d2a89d5d61e99ef91dba62adcb1767566f883ad37677ba5a",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.6780620813369751,
+        "loss_depth": 0.2872534692287445,
+        "grad_norm": 21.660414559766526,
+        "thumb": "thumbs/1K_04dc353499a2cc18d2a89d5d61e99ef91dba62adcb1767566f883ad37677ba5a.jpg"
+      },
+      "b": {
+        "scene_id": "4c57109dcbce7a11953532673415ece17f85e4429894628c925be678bf0d92b2",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9168590903282166,
+        "loss_depth": 0.4787946045398712,
+        "grad_norm": 22.35223395109899,
+        "thumb": "thumbs/1K_4c57109dcbce7a11953532673415ece17f85e4429894628c925be678bf0d92b2.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.6303776502609253,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "00def8c08b0a092efa8b6aa444f1bb411333d6bdc7926885c7a72680d189a3c8",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9192526340484619,
+        "loss_depth": 0.5711095929145813,
+        "grad_norm": 17.501514295385004,
+        "thumb": "thumbs/1K_00def8c08b0a092efa8b6aa444f1bb411333d6bdc7926885c7a72680d189a3c8.jpg"
+      },
+      "b": {
+        "scene_id": "4d5f2c68dd8928c1d08c9598fe8d180cfcfdf473fe25cbfba4cb9e626b834ea4",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.1996755599975586,
+        "loss_depth": 0.3061993718147278,
+        "grad_norm": 23.587914177744743,
+        "thumb": "thumbs/1K_4d5f2c68dd8928c1d08c9598fe8d180cfcfdf473fe25cbfba4cb9e626b834ea4.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.629493236541748,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "008c201a7eff27ce0413f7931a48e92cf05ded9d9b7cf16cc2276ff3b80c7b22",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.8115732669830322,
+        "loss_depth": 0.40881744027137756,
+        "grad_norm": 14.787875350577767,
+        "thumb": "thumbs/1K_008c201a7eff27ce0413f7931a48e92cf05ded9d9b7cf16cc2276ff3b80c7b22.jpg"
+      },
+      "b": {
+        "scene_id": "3fae5e0bb1354fe30a0a23934ab00c7a51004027cc79ae1205f910b7bdefd33f",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.0734314918518066,
+        "loss_depth": 0.4289315640926361,
+        "grad_norm": 28.190198738126362,
+        "thumb": "thumbs/1K_3fae5e0bb1354fe30a0a23934ab00c7a51004027cc79ae1205f910b7bdefd33f.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.6178796291351318,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "2937ca48a893ecfaed07fc0f2d42fe231869ed9a955c0b8629a9e55defa27676",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.3738280534744263,
+        "loss_depth": 0.4628154933452606,
+        "grad_norm": 27.10963333654327,
+        "thumb": "thumbs/1K_2937ca48a893ecfaed07fc0f2d42fe231869ed9a955c0b8629a9e55defa27676.jpg"
+      },
+      "b": {
+        "scene_id": "6388041259ba089a7a9b23b59d2eeb90dbc6f95c03d0afbc2a77147872dfb318",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.7726225256919861,
+        "loss_depth": 0.38573554158210754,
+        "grad_norm": 22.14717406323423,
+        "thumb": "thumbs/1K_6388041259ba089a7a9b23b59d2eeb90dbc6f95c03d0afbc2a77147872dfb318.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.6144707798957825,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "077de0554f2217ec92dfd64b78e8036aa2ea8349819aef924e77beedd975a51c",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.5129239559173584,
+        "loss_depth": 0.5963994860649109,
+        "grad_norm": 24.887817880207024,
+        "thumb": "thumbs/1K_077de0554f2217ec92dfd64b78e8036aa2ea8349819aef924e77beedd975a51c.jpg"
+      },
+      "b": {
+        "scene_id": "30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9840136766433716,
+        "loss_depth": 0.373430997133255,
+        "grad_norm": 29.029346243491226,
+        "thumb": "thumbs/1K_30844e7aaec5dd3bab19942e305ffb9ee548ccddc18becc79d9ec49fc45cb3dc.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.6144212484359741,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "00534f5868a6f72e77befbdb06e35ee9dc34e175dddf0e64e8b1922e494c8e24",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9491100311279297,
+        "loss_depth": 0.4831990599632263,
+        "grad_norm": 21.020211303616545,
+        "thumb": "thumbs/1K_00534f5868a6f72e77befbdb06e35ee9dc34e175dddf0e64e8b1922e494c8e24.jpg"
+      },
+      "b": {
+        "scene_id": "4d5f2c68dd8928c1d08c9598fe8d180cfcfdf473fe25cbfba4cb9e626b834ea4",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.1996755599975586,
+        "loss_depth": 0.3061993718147278,
+        "grad_norm": 23.587914177744743,
+        "thumb": "thumbs/1K_4d5f2c68dd8928c1d08c9598fe8d180cfcfdf473fe25cbfba4cb9e626b834ea4.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.613877534866333,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "1bd8b664e906ab3b3081a9e0adc03fb5a26676d43b21fc6132547df33f80d15a",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 1.0231444835662842,
+        "loss_depth": 0.5410066843032837,
+        "grad_norm": 23.663258032875202,
+        "thumb": "thumbs/1K_1bd8b664e906ab3b3081a9e0adc03fb5a26676d43b21fc6132547df33f80d15a.jpg"
+      },
+      "b": {
+        "scene_id": "3db82e7ffc5c7351031e0f5ff1e11313bbbd67e3d91368a2c71beeab1399e114",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9219388961791992,
+        "loss_depth": 0.4844510853290558,
+        "grad_norm": 11.44368180625935,
+        "thumb": "thumbs/1K_3db82e7ffc5c7351031e0f5ff1e11313bbbd67e3d91368a2c71beeab1399e114.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.6105659008026123,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "00def8c08b0a092efa8b6aa444f1bb411333d6bdc7926885c7a72680d189a3c8",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9192526340484619,
+        "loss_depth": 0.5711095929145813,
+        "grad_norm": 17.501514295385004,
+        "thumb": "thumbs/1K_00def8c08b0a092efa8b6aa444f1bb411333d6bdc7926885c7a72680d189a3c8.jpg"
+      },
+      "b": {
+        "scene_id": "533675f8de0766a796d35aaeb54cebb90c06ab82cdd5047ca62c3685dfbb777b",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.9484914541244507,
+        "loss_depth": 0.45881664752960205,
+        "grad_norm": 18.096024871625563,
+        "thumb": "thumbs/1K_533675f8de0766a796d35aaeb54cebb90c06ab82cdd5047ca62c3685dfbb777b.jpg"
+      }
+    },
+    {
+      "kind": "bottom_grad",
+      "grad_cosine": -0.6102842092514038,
+      "feature_cosine": null,
+      "a": {
+        "scene_id": "2036ef5406a4d39e23e7fbf19156f67112bb57c529611476a6835d3ce88148c9",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.8044766187667847,
+        "loss_depth": 0.2569415867328644,
+        "grad_norm": 17.63722407558272,
+        "thumb": "thumbs/1K_2036ef5406a4d39e23e7fbf19156f67112bb57c529611476a6835d3ce88148c9.jpg"
+      },
+      "b": {
+        "scene_id": "2dfe7527a94e2122a660d43c1be38ab05262d8c3bfa9ad6676250567c063a2c7",
+        "subset": "1K",
+        "dataset": "dl3dv",
+        "loss": 0.6815115213394165,
+        "loss_depth": 0.28768542408943176,
+        "grad_norm": 19.45052352351341,
+        "thumb": "thumbs/1K_2dfe7527a94e2122a660d43c1be38ab05262d8c3bfa9ad6676250567c063a2c7.jpg"
+      }
+    }
+  ],
+  "contrast_pairs": []
+}
