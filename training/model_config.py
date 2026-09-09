@@ -95,6 +95,30 @@ PRESETS: dict[str, ModelConfig] = {
         dense_head_out_channels=[128, 256, 512, 512],
         dinov3_model_id="facebook/dinov3-vits16-pretrain-lvd1689m",
     ),
+    # A deliberately weaker twin of `small` for the DoReMi proxy: same DINOv3
+    # ViT-S/16 trunk and same `embed_dim`, so it consumes identical visual features
+    # and loads the same converted trunk, but a third of the aggregator depth and
+    # roughly half the head width. The point is a capacity deficit the *reference*
+    # does not have -- `runs/doremi-proxy-raw` (proxy preset == reference preset)
+    # produced a per-cluster excess loss whose eta^2 sat inside the shuffle null,
+    # because two identically-sized models trained on the same pool differ by a
+    # near-constant offset and window noise, not by domain. `depth=4` is the floor:
+    # DenseHead consumes exactly four cached scales.
+    "tiny": ModelConfig(
+        name="tiny",
+        embed_dim=384,
+        depth=4,
+        num_heads=6,
+        cached_layer_indices=(0, 1, 2, 3),
+        register_attention_block_indices=[1, 3],
+        patch_embed_depth=12,
+        patch_embed_num_heads=6,
+        camera_head_num_heads=6,
+        camera_head_trunk_depth=2,
+        dense_head_features=64,
+        dense_head_out_channels=[64, 128, 256, 256],
+        dinov3_model_id="facebook/dinov3-vits16-pretrain-lvd1689m",
+    ),
     # DINOv3 ViT-B/16 trunk.
     "base": ModelConfig(
         name="base",

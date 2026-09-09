@@ -8,9 +8,9 @@ low gradient cosine) when `--features` is passed.
 Default: `runs/default/final.pt` on the mixed DL3DV + ScanNet train subset from
 that run's `args.json` (`multi_clustering/subset_dl3dv50pct_scannet.txt`).
 
-    .venv/bin/python clustering/grad_similar_pairs.py
-    .venv/bin/python clustering/grad_similar_pairs.py --max-scenes 200 --top 30
-    .venv/bin/python clustering/grad_similar_pairs.py --run runs/default --force
+    .venv/bin/python grad_pairs/grad_similar_pairs.py
+    .venv/bin/python grad_pairs/grad_similar_pairs.py --max-scenes 200 --top 30
+    .venv/bin/python grad_pairs/grad_similar_pairs.py --run runs/default --force
 """
 
 from __future__ import annotations
@@ -33,7 +33,6 @@ ROOT = Path(__file__).resolve().parents[1]
 HERE = Path(__file__).parent
 DEFAULT_RUN = ROOT / "runs/default"
 sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(HERE))
 
 from training.dl3dv_dataset import DL3DVDataset, collate_scenes  # noqa: E402
 from training.evaluate import read_payload  # noqa: E402
@@ -425,7 +424,7 @@ def main() -> int:
     ap.add_argument("--scannet-depth-root", type=Path, default=run_defaults.get("scannet_depth_root"))
     ap.add_argument("--scene-list", type=Path, default=run_defaults.get("scene_list"))
     ap.add_argument("--features", type=Path, default=ROOT / "train_with_eval/layer30_features.npz")
-    ap.add_argument("--thumbs", type=Path, default=HERE / "thumbs")
+    ap.add_argument("--thumbs", type=Path, default=ROOT / "clustering" / "thumbs")
     ap.add_argument("--sketch-dim", type=int, default=4096)
     ap.add_argument("--seed", type=int, default=1234)
     ap.add_argument("--workers", type=int, default=4)

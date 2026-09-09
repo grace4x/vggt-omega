@@ -80,7 +80,7 @@ from training.mixed_dataset import (  # noqa: E402
     collate_mixed,
 )
 from training.losses import VGGTOmegaLoss, depth_metrics, pose_metrics  # noqa: E402
-from training.model_config import build_model, parameter_summary  # noqa: E402
+from training.model_config import PRESETS, build_model, parameter_summary  # noqa: E402
 
 
 # --------------------------------------------------------------------------- #
@@ -238,7 +238,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--dense-only", action="store_true", help="drop scenes with no dense depth (~12%%)")
     p.add_argument("--out", type=Path, default=Path("runs/vggt-omega-small"))
 
-    p.add_argument("--preset", default="small", choices=("small", "base", "large"))
+    p.add_argument("--preset", default="small", choices=sorted(PRESETS))
     p.add_argument("--dinov3", type=Path, default=None, help="converted DINOv3 trunk (convert_dinov3.py)")
     p.add_argument("--checkpointing", action="store_true", help="activation checkpointing (~4x less memory)")
     p.add_argument("--freeze-backbone-steps", type=int, default=0)
