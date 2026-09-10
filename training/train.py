@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Train VGGT-Omega from scratch on preprocessed DL3DV and/or ScanNet v2.
+"""Train VGGT-Omega from scratch on preprocessed DL3DV, ScanNet v2 and MegaSynth.
 
 Single GPU:
 
@@ -7,14 +7,17 @@ Single GPU:
         --dinov3 checkpoints/dinov3_vits16.pt --out runs/small \
         --num-frames 16 --max-steps 100000 --checkpointing
 
-Both datasets at once (see `mixed_dataset.py`):
+Several datasets at once (see `mixed_dataset.py`) -- each is opt-in through its
+own root, and any combination of the three works:
 
     python training/train.py \
         --data-root ~/dl3dv-train --depth-root ~/dl3dv-depth \
         --scannet-root ~/scannet-train \
-        --dl3dv-weight 1 --scannet-weight 1 --preset small --out runs/mixed
+        --megasynth-root ~/megasynth-train \
+        --dl3dv-weight 1 --scannet-weight 1 --megasynth-weight 1 \
+        --preset small --out runs/mixed
 
-At 1/1 the mix is proportional to scene count, so DL3DV's ~4900 train scenes
+At 1/1/1 the mix is proportional to scene count, so DL3DV's ~4900 train scenes
 dominate ScanNet's ~1500. There are two ways to even that out, and they are not
 the same experiment:
 
@@ -27,7 +30,15 @@ point is to hold DL3DV's *diversity* down. `--dl3dv-weight 0.5` is a third
 option, but it picks its half at random under --seed rather than taking a
 prefix, so it is not reproducible across a --seed change.
 
-Loss and val metrics are reported per dataset as well as pooled. Both sets must
+MegaSynth pulls the same levers in the other direction: it is procedurally
+generated, so there is as much of it as you are willing to download, and left
+unweighted it can swamp both real sets. `--megasynth-weight 0.3` or
+`--megasynth-scenes 2000` holds it to a supporting share. The paper it comes
+from uses it as a co-training set rather than a replacement, and its scenes have
+no semantics at all -- geometry primitives, no objects -- so the real data is
+what carries anything semantic the backbone learns.
+
+Loss and val metrics are reported per dataset as well as pooled. Every set must
 be preprocessed at the same resolution, since a batch spanning two shapes cannot
 be stacked -- see `assert_stackable` in `mixed_dataset.py`.
 
@@ -72,7 +83,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from training.dl3dv_dataset import DL3DVDataset  # noqa: E402
+from training.dl3dv_dataset import DL3DVDataset, FovJitterCollate  # noqa: E402
 from training.mixed_dataset import (  # noqa: E402
     TaggedDataset,
     assert_stackable,
@@ -230,11 +241,18 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--scannet-root", type=Path, default=None, help="output of preprocess_scannet.py")
     p.add_argument("--scannet-depth-root", type=Path, default=None,
                    help="dense ScanNet depth; defaults to <scannet-root>/depth")
+    p.add_argument("--megasynth-root", type=Path, default=None, help="output of download_megasynth.py")
+    p.add_argument("--megasynth-depth-root", type=Path, default=None,
+                   help="dense MegaSynth depth; defaults to <megasynth-root>/depth")
     p.add_argument("--dl3dv-weight", type=float, default=1.0,
                    help="times each DL3DV scene is listed per epoch (1.0 = once)")
     p.add_argument("--scannet-weight", type=float, default=1.0,
                    help="times each ScanNet scene is listed per epoch. At 1/1 the mix is simply\n"
                         "proportional to scene count; raise this to give the smaller set more weight")
+    p.add_argument("--megasynth-weight", type=float, default=1.0,
+                   help="times each MegaSynth scene is listed per epoch. Synthetic scenes are\n"
+                        "cheap to add and easily outnumber the real ones, so this is the knob\n"
+                        "that stops them dominating -- see --megasynth-scenes for the other way")
     p.add_argument("--dense-only", action="store_true", help="drop scenes with no dense depth (~12%%)")
     p.add_argument("--out", type=Path, default=Path("runs/vggt-omega-small"))
 
@@ -282,12 +300,25 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--overfit", type=int, default=0, help="train on N scenes only; loss should go to ~0")
     p.add_argument("--scene-list", type=Path, default=None,
-                   help="train on only the `subset/scene` lines in this file (clustering/subset.py)")
+                   help="train on only the `subset/scene` lines in this file (clustering/subset.py).\n"
+                        "A dataset whose subsets the file never names is left unfiltered, so a\n"
+                        "DL3DV/ScanNet subset does not silently empty a MegaSynth set mixed in\n"
+                        "alongside it")
     p.add_argument("--dl3dv-scenes", type=int, default=0,
                    help="train on only the first N DL3DV scenes (0 = all). The index order is\n"
                         "arbitrary, so this is a sample, not a filter -- but note it is a prefix,\n"
                         "so N < 976 stays inside the 1K subset")
+    p.add_argument("--fov-jitter", type=int, nargs=2, default=None, metavar=("MIN_H", "MIN_W"),
+                   help="VGGT's FoV augmentation: crop each training batch around the principal\n"
+                        "point to a random frame between MIN_H x MIN_W and the stored shape.\n"
+                        "Cropping is the only way to move the FoV without touching the pixels, so\n"
+                        "this is what teaches the 9D pose_enc's fov_h/fov_w to be estimated from\n"
+                        "image content rather than memorised from the training set's few cameras.\n"
+                        "`--fov-jitter 128 224` on a 224x384 set matches the paper's aspect range\n"
+                        "of [0.33, 1.0] and spans 66-96 deg horizontal FoV on DL3DV. Off by\n"
+                        "default, which pins every sample at the stored frame's single FoV.")
     p.add_argument("--scannet-scenes", type=int, default=0, help="cap ScanNet at N train scenes (0 = all)")
+    p.add_argument("--megasynth-scenes", type=int, default=0, help="cap MegaSynth at N train scenes (0 = all)")
     return p
 
 
@@ -328,8 +359,11 @@ def main() -> int:
     # writes the same on-disk contract; only the roots differ. Preprocess ScanNet
     # with `--target-hw 224 384 --fit crop` and the two are the same shape, so
     # mixing them needs nothing more than a ConcatDataset.
-    if args.data_root is None and args.scannet_root is None:
-        raise SystemExit("pass --data-root (DL3DV), --scannet-root (ScanNet), or both")
+    if args.data_root is None and args.scannet_root is None and args.megasynth_root is None:
+        raise SystemExit(
+            "pass at least one of --data-root (DL3DV), --scannet-root (ScanNet), "
+            "--megasynth-root (MegaSynth)"
+        )
 
     def make_split(split: str, *, augment: bool, seed: int | None, sampling: str) -> dict:
         built = {}
@@ -339,6 +373,10 @@ def main() -> int:
             # only risks dropping scenes over a missing flag.
             ("scannet", args.scannet_root, args.scannet_depth_root or
              (args.scannet_root / "depth" if args.scannet_root else None), False),
+            # Same reasoning as ScanNet: a render's depth is exact and complete,
+            # so every MegaSynth scene has it and `dense_only` is a no-op.
+            ("megasynth", args.megasynth_root, args.megasynth_depth_root or
+             (args.megasynth_root / "depth" if args.megasynth_root else None), False),
         )
         for name, root, depth_root, dense_only in sources:
             if root is None:
@@ -367,16 +405,32 @@ def main() -> int:
 
     train_parts = make_split("train", augment=True, seed=None, sampling=args.sampling)
 
+    # A `--scene-list` names `subset/scene` lines, and the lists this repo
+    # generates (clustering/subset.py and friends) are built over whichever
+    # datasets were clustered -- typically DL3DV and ScanNet. A dataset the list
+    # never mentions is one the list has no opinion about, so it passes through
+    # untouched. Filtering it against the list instead would leave it with zero
+    # scenes and drop it from the mix without saying so, which is what adding
+    # --megasynth-root to a DL3DV subset run would otherwise do.
+    wanted = set(args.scene_list.read_text().split()) if args.scene_list is not None else set()
+    listed_subsets = {line.split("/", 1)[0] for line in wanted}
+
     for name, dataset in train_parts.items():
-        if args.scene_list is not None:
+        if wanted and not any(e["subset"] in listed_subsets for e in dataset.scenes):
+            if is_main(rank):
+                print(f"[scene-list] {name}: not named in the list; keeping all {len(dataset.scenes)} scenes")
+        elif wanted:
             # After construction, so the dataset's own filters (dense_only,
             # num_frames, image size) still apply -- a listed scene they drop
             # stays dropped.
-            wanted = set(args.scene_list.read_text().split())
             dataset.scenes = [e for e in dataset.scenes if f"{e['subset']}/{e['scene']}" in wanted]
             if is_main(rank):
                 print(f"[scene-list] {name}: {len(dataset.scenes)}/{len(wanted)} listed scenes kept")
-        cap = {"dl3dv": args.dl3dv_scenes, "scannet": args.scannet_scenes}.get(name, 0)
+        cap = {
+            "dl3dv": args.dl3dv_scenes,
+            "scannet": args.scannet_scenes,
+            "megasynth": args.megasynth_scenes,
+        }.get(name, 0)
         if cap and cap < len(dataset.scenes):
             # A plain prefix. DL3DV's 1K..5K subsets are release batches, not
             # strata -- scene content is already unordered within and across
@@ -398,10 +452,24 @@ def main() -> int:
     # preprocessed at different resolutions.
     image_hw = assert_stackable(train_parts, args.batch_size)
 
-    weights = {"dl3dv": args.dl3dv_weight, "scannet": args.scannet_weight}
+    weights = {
+        "dl3dv": args.dl3dv_weight,
+        "scannet": args.scannet_weight,
+        "megasynth": args.megasynth_weight,
+    }
     train_set, source_names, sizes, epoch_counts = build_concat_trainset(
         train_parts, weights, seed=args.seed
     )
+
+    # The FoV jitter crops a whole batch at once, so it belongs in the collate --
+    # `crop_batch_to` explains why the per-sample path cannot carry the shape. Only
+    # the train loader gets it: val has to stay comparable across steps and runs,
+    # and the model is evaluated at the stored frame.
+    train_collate = collate_mixed
+    if args.fov_jitter is not None:
+        train_collate = FovJitterCollate(
+            collate_mixed, args.fov_jitter, patch_size=PRESETS[args.preset].patch_size, seed=args.seed
+        )
 
     train_sampler = DistributedSampler(train_set, shuffle=True, drop_last=True) if world_size > 1 else None
     train_loader = DataLoader(
@@ -413,7 +481,7 @@ def main() -> int:
         pin_memory=True,
         drop_last=True,
         persistent_workers=args.workers > 0,
-        collate_fn=collate_mixed,
+        collate_fn=train_collate,
     )
 
     val_loaders: dict[str, DataLoader] = {}
@@ -441,7 +509,10 @@ def main() -> int:
                     if val_loaders else "  (no val)")
         print(
             f"train samples/epoch={len(train_set)} [{mix}]{val_desc}"
-            + f"  {image_hw[0]}x{image_hw[1]}  frames/sample={args.num_frames}"
+            + f"  {image_hw[0]}x{image_hw[1]}"
+            + (f" (fov-jitter down to {args.fov_jitter[0]}x{args.fov_jitter[1]})"
+               if args.fov_jitter is not None else "")
+            + f"  frames/sample={args.num_frames}"
             + f"  world_size={world_size}"
         )
 

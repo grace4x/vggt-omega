@@ -244,7 +244,7 @@ def geometric_covisibility(
     return covis.astype(np.float16)
 
 
-def quantise_depth(stack: np.ndarray) -> tuple[np.ndarray, float, float]:
+def quantise_depth(stack: np.ndarray, lo: float = DEPTH_QUANT_LO) -> tuple[np.ndarray, float, float]:
     """Log-quantise metres to uint16, matching `fetch_dl3dv_depth.dequantise`.
 
     Unlike the DL3DV version this pins `lo` to a constant below the sensor's
@@ -256,9 +256,12 @@ def quantise_depth(stack: np.ndarray) -> tuple[np.ndarray, float, float]:
 
     16 bits over a log range of ~0.05-10 m is ~0.008% relative error, three
     orders of magnitude below the sensor's own noise.
+
+    `lo` is a parameter only so `preprocess_megasynth.py` can reuse this with a
+    floor under *its* near clip; the same "no valid pixel may reach the 0 rail"
+    rule is what makes any given value correct.
     """
     valid = stack > 0
-    lo = DEPTH_QUANT_LO
     hi = float(np.percentile(stack[valid], 99.99)) * 1.02 if valid.any() else lo * 1000.0
     hi = max(hi, lo * 1.001)
     span = math.log(hi) - math.log(lo)

@@ -1,15 +1,16 @@
-"""Training on DL3DV and ScanNet together.
+"""Training on DL3DV, ScanNet and MegaSynth together.
 
-`preprocess_scannet.py` writes the same on-disk contract as `preprocess_dl3dv.py`,
-so both datasets load through the same `DL3DVDataset` and mixing them is just a
-`ConcatDataset` -- provided they are stored at the same resolution. That is what
-`preprocess_scannet.py --target-hw 224 384 --fit crop` is for: ScanNet's 4:3
-frames become 224x384, matching a DL3DV set built at `--resolution 384`, and the
-two become freely interchangeable inside a batch.
+`preprocess_scannet.py` and `preprocess_megasynth.py` write the same on-disk
+contract as `preprocess_dl3dv.py`, so all three datasets load through the same
+`DL3DVDataset` and mixing them is just a `ConcatDataset` -- provided they are
+stored at the same resolution. That is what `--target-hw 224 384 --fit crop` is
+for in both of the other preprocessors: ScanNet's 4:3 frames and MegaSynth's
+square renders both become 224x384, matching a DL3DV set built at
+`--resolution 384`, and all three become freely interchangeable inside a batch.
 
 `assert_stackable` enforces that up front. Without it a shape mismatch surfaces
 as a `collate_scenes` failure somewhere deep in an epoch, which is a confusing
-way to learn that the two sets were preprocessed differently.
+way to learn that the sets were preprocessed differently.
 
 Mixing is proportional to scene count by default. `weights` oversamples a
 dataset by listing its scenes more than once per epoch, for when the smaller set
@@ -27,7 +28,7 @@ class TaggedDataset(Dataset):
 
     Lets the training loop break loss and metrics down per dataset, which matters
     when mixing: a rising loss means something different if it is ScanNet's dense
-    sensor depth than if it is DL3DV's estimated depth.
+    sensor depth, DL3DV's estimated depth, or MegaSynth's exact rendered depth.
     """
 
     def __init__(self, dataset: Dataset, name: str) -> None:
@@ -73,8 +74,9 @@ def assert_stackable(datasets: dict[str, Dataset], batch_size: int) -> tuple[int
         raise SystemExit(
             f"datasets are stored at different resolutions ({detail}), so batches of "
             f"{batch_size} cannot be stacked.\n"
-            "Rebuild ScanNet at DL3DV's shape:\n"
+            "Rebuild the odd one out at DL3DV's shape:\n"
             "    training/download_scannet.sh --target-hw 224 384 --fit crop\n"
+            "    training/download_megasynth.py --target-hw 224 384 --fit crop\n"
             "or run with --batch-size 1, where every batch holds a single scene."
         )
     print(f"[mix] warning: datasets differ in resolution ({detail}); only --batch-size 1 will work")
@@ -147,10 +149,14 @@ if __name__ == "__main__":
         def __getitem__(self, i):
             return {"i": i}
 
-    parts = {"dl3dv": Fake(4871, (224, 384)), "scannet": Fake(1500, (224, 384))}
+    parts = {
+        "dl3dv": Fake(4871, (224, 384)),
+        "scannet": Fake(1500, (224, 384)),
+        "megasynth": Fake(5000, (224, 384)),
+    }
     print("shape check (matched):", assert_stackable(parts, batch_size=4))
 
-    for weights in (None, {"scannet": 3.0}):
+    for weights in (None, {"scannet": 3.0}, {"megasynth": 0.3}):
         dataset, names, sizes, counts = build_concat_trainset(parts, weights, seed=0)
         seen = collections.Counter(dataset[i]["dataset"] for i in range(len(dataset)))
         total = sum(seen.values())

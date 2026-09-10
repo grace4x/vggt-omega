@@ -422,6 +422,129 @@ def _resize_shape(height: int, width: int, resolution: int, patch_size: int) -> 
     return out_h, out_w
 
 
+def crop_batch_to(batch: dict, crop_hw: tuple[int, int]) -> dict:
+    """Principal-point crop of a collated batch, with the unit space restored.
+
+    This is VGGT's field-of-view augmentation. The paper resizes isotropically so
+    the long side is 518, then crops the short side around the principal point to
+    somewhere in [168, 518] -- a multiple of the patch size -- which randomises the
+    aspect ratio over [0.33, 1.0]. Cropping is the only operation that changes a
+    frustum without touching the image content: the focal lengths are untouched and
+    only the principal point and the frame size move, so the result is exactly what
+    a narrower lens on the same camera would have produced. No resampling, no
+    invented pixels, and `pose_enc`'s fov_h/fov_w land on the cropped frustum by
+    construction, since `extri_intri_to_pose_encoding` derives them from (H, W) and
+    the focals. A *resize* would be the wrong lever -- it scales fx, fy and (H, W)
+    together and leaves the FoV exactly where it was.
+
+    Every set this repo trains or evaluates on stores the principal point dead
+    centre -- verified over DL3DV, MegaSynth and ETH3D, where `cx - W/2` and
+    `cy - H/2` are 0.00 px at every percentile -- so a centre crop *is* a
+    principal-point crop, and cropping by a multiple of the patch size leaves the
+    cropped cx, cy exactly at crop_w/2, crop_h/2. That is what
+    `encoding_to_camera` assumes when it rebuilds K from the predicted FoV, so the
+    crop cannot introduce a principal point the encoding is unable to represent.
+
+    The scene scale is re-derived over the cropped frustum rather than inherited.
+    `__getitem__` normalised the targets so the mean point distance is 1 over the
+    *stored* frame; after a crop that mean is no longer 1, and the difference is
+    scale the model cannot see and therefore cannot be asked to predict. Rescaling
+    keeps the unit-space invariant the depth and point losses are written against.
+
+    Cropping here rather than in `__getitem__` is what lets one crop cover a whole
+    batch: `collate_scenes` requires a uniform image shape, and the index a
+    `ConcatDataset`/`Subset` hands down to `__getitem__` has no room to carry a
+    per-batch shape with it.
+    """
+    images = batch["images"]
+    B, S = images.shape[:2]
+    H, W = images.shape[-2:]
+    crop_h = min(int(crop_hw[0]), H)
+    crop_w = min(int(crop_hw[1]), W)
+    if (crop_h, crop_w) == (H, W):
+        return batch
+
+    y0, x0 = (H - crop_h) // 2, (W - crop_w) // 2
+    ys, xs = slice(y0, y0 + crop_h), slice(x0, x0 + crop_w)
+
+    out = dict(batch)
+    out["images"] = images[..., ys, xs].contiguous()
+    out["depth"] = batch["depth"][..., ys, xs].contiguous()
+    out["depth_mask"] = batch["depth_mask"][..., ys, xs].contiguous()
+    out["point_map"] = batch["point_map"][:, :, ys, xs, :].contiguous()
+
+    intrinsics = batch["intrinsics"].clone()
+    intrinsics[..., 0, 2] -= x0
+    intrinsics[..., 1, 2] -= y0
+
+    # Re-normalise to a mean point distance of 1 over what is left. `rescale` is
+    # that mean in the *current* units, so dividing by it restores the invariant.
+    mask = out["depth_mask"]
+    distance = out["point_map"].norm(dim=-1)
+    kept = mask.flatten(1).sum(1)
+    total = (distance * mask).flatten(1).sum(1)
+    rescale = total / kept.clamp(min=1)
+    usable = (kept > 0) & torch.isfinite(rescale) & (rescale > 1e-8)
+    rescale = torch.where(usable, rescale, torch.ones_like(rescale))
+
+    extrinsics = batch["extrinsics"].clone()
+    extrinsics[..., 3] = extrinsics[..., 3] / rescale.view(B, 1, 1)
+    out["extrinsics"] = extrinsics
+    out["intrinsics"] = intrinsics
+    out["depth"] = out["depth"] / rescale.view(B, 1, 1, 1)
+    out["point_map"] = out["point_map"] / rescale.view(B, 1, 1, 1, 1)
+    out["scene_scale"] = batch["scene_scale"] * rescale
+    out["scale_ok"] = batch["scale_ok"] & usable
+    out["pose_enc"] = extri_intri_to_pose_encoding(extrinsics, intrinsics, (crop_h, crop_w))
+    return out
+
+
+class FovJitterCollate:
+    """`collate` plus a per-batch principal-point crop; see `crop_batch_to`.
+
+    One crop per batch, not per scene, because a batch spanning two image shapes
+    cannot be stacked. `min_hw` is the smallest frame to crop to; the largest is
+    always the stored shape, so the identity crop stays in the distribution.
+
+    Sides are drawn independently over the multiples of `patch_size` in range.
+    Drawing the short side alone would be the literal paper recipe, but the paper
+    gets its *long*-side FoV spread from training on 17 datasets with 17 different
+    cameras. With two datasets there is no such spread to inherit -- DL3DV sits at
+    96 deg horizontal and MegaSynth at 58 deg, with nothing in between -- so the
+    long side has to be jittered too or the FoV head only ever sees two values and
+    has no reason to learn an estimator rather than a two-way classifier.
+
+    The RNG is seeded from `seed` and the worker id but *not* the rank, so every
+    rank in a DDP job walks the same sequence of crops and the ranks of one step
+    agree on a shape.
+    """
+
+    def __init__(self, collate, min_hw: tuple[int, int], patch_size: int = 16, seed: int = 0):
+        self.collate = collate
+        self.min_hw = (int(min_hw[0]), int(min_hw[1]))
+        self.patch_size = patch_size
+        self.seed = seed
+        self._rng: random.Random | None = None
+        self._n = 0
+
+    def _choice(self, low: int, high: int) -> int:
+        """A multiple of `patch_size` in [low, high], inclusive of `high`."""
+        lo = max(1, -(-low // self.patch_size))
+        hi = high // self.patch_size
+        if hi <= lo:
+            return high
+        return self._rng.randint(lo, hi) * self.patch_size
+
+    def __call__(self, batch: list[dict]) -> dict:
+        out = self.collate(batch)
+        if self._rng is None:
+            info = torch.utils.data.get_worker_info()
+            self._rng = random.Random(f"{self.seed}:{info.id if info else 0}")
+        self._n += 1
+        H, W = out["images"].shape[-2:]
+        return crop_batch_to(out, (self._choice(self.min_hw[0], H), self._choice(self.min_hw[1], W)))
+
+
 def collate_scenes(batch: list[dict]) -> dict:
     """Stack scenes into (B, S, ...). Requires a uniform S and image size."""
     shapes = {tuple(b["images"].shape) for b in batch}
