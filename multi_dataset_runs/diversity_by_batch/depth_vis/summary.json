@@ -1,0 +1,130 @@
+{
+  "checkpoint": "/home/grace/vggt-omega/runs/diversity_by_batch/final.pt",
+  "step": 15000,
+  "scenes": [
+    {
+      "dataset": "eth3d",
+      "scene": "courtyard",
+      "scene_scale": 9.597057342529297,
+      "image_hw": [
+        256,
+        384
+      ],
+      "num_frames": 8,
+      "scale_ratio_median": 0.8210136294364929,
+      "abs_rel_raw": 0.16979490220546722,
+      "abs_rel_aligned": 0.1836296170949936,
+      "delta_1.25_aligned": 0.5651644468307495,
+      "frames": [
+        {
+          "frame": 0,
+          "abs_rel_aligned_pixels": 0.10898110270500183,
+          "valid_frac": 0.7712300618489584
+        },
+        {
+          "frame": 3,
+          "abs_rel_aligned_pixels": 0.061697885394096375,
+          "valid_frac": 0.7555643717447916
+        },
+        {
+          "frame": 7,
+          "abs_rel_aligned_pixels": 0.35899338126182556,
+          "valid_frac": 0.694366455078125
+        }
+      ]
+    },
+    {
+      "dataset": "eth3d",
+      "scene": "office",
+      "scene_scale": 2.6367111206054688,
+      "image_hw": [
+        256,
+        384
+      ],
+      "num_frames": 8,
+      "scale_ratio_median": 1.0777140855789185,
+      "abs_rel_raw": 0.13336506485939026,
+      "abs_rel_aligned": 0.15321682393550873,
+      "delta_1.25_aligned": 0.784579873085022,
+      "frames": [
+        {
+          "frame": 0,
+          "abs_rel_aligned_pixels": 0.0686875656247139,
+          "valid_frac": 0.8042399088541666
+        },
+        {
+          "frame": 3,
+          "abs_rel_aligned_pixels": 0.2596966326236725,
+          "valid_frac": 0.9423116048177084
+        },
+        {
+          "frame": 7,
+          "abs_rel_aligned_pixels": 0.13647450506687164,
+          "valid_frac": 0.7096455891927084
+        }
+      ]
+    },
+    {
+      "dataset": "eth3d",
+      "scene": "pipes",
+      "scene_scale": 2.6624178886413574,
+      "image_hw": [
+        256,
+        384
+      ],
+      "num_frames": 8,
+      "scale_ratio_median": 1.1045095920562744,
+      "abs_rel_raw": 0.12794746458530426,
+      "abs_rel_aligned": 0.10337606072425842,
+      "delta_1.25_aligned": 0.9210449457168579,
+      "frames": [
+        {
+          "frame": 0,
+          "abs_rel_aligned_pixels": 0.06899165362119675,
+          "valid_frac": 0.84039306640625
+        },
+        {
+          "frame": 3,
+          "abs_rel_aligned_pixels": 0.09637303650379181,
+          "valid_frac": 0.664215087890625
+        },
+        {
+          "frame": 7,
+          "abs_rel_aligned_pixels": 0.09000953286886215,
+          "valid_frac": 0.7491658528645834
+        }
+      ]
+    },
+    {
+      "dataset": "scannet",
+      "scene": "scene0081_00",
+      "scene_scale": 2.087972402572632,
+      "image_hw": [
+        224,
+        384
+      ],
+      "num_frames": 8,
+      "scale_ratio_median": 0.9301366806030273,
+      "abs_rel_raw": 0.0778898149728775,
+      "abs_rel_aligned": 0.048419494181871414,
+      "delta_1.25_aligned": 0.9940117001533508,
+      "frames": [
+        {
+          "frame": 0,
+          "abs_rel_aligned_pixels": 0.0346362479031086,
+          "valid_frac": 0.9558686755952381
+        },
+        {
+          "frame": 3,
+          "abs_rel_aligned_pixels": 0.06888245791196823,
+          "valid_frac": 0.9335123697916666
+        },
+        {
+          "frame": 7,
+          "abs_rel_aligned_pixels": 0.05245464667677879,
+          "valid_frac": 0.9637509300595238
+        }
+      ]
+    }
+  ]
+}

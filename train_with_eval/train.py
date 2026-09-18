@@ -51,7 +51,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from train_with_eval.batch_diversity import BatchDiversityTracker, DEFAULT_FINAL_LN  # noqa: E402
 from train_with_eval.eth3d_probe import Eth3dProbeConfig, collect_eth3d_probe_batches  # noqa: E402
-from training.dl3dv_dataset import DL3DVDataset  # noqa: E402
+from training.dl3dv_dataset import DEFAULT_WINDOW_SIZE, DL3DVDataset, SAMPLING_CHOICES  # noqa: E402
 from training.mixed_dataset import (  # noqa: E402
     TaggedDataset,
     assert_stackable,
@@ -114,8 +114,10 @@ def build_parser() -> argparse.ArgumentParser:
                    help="frame windows per scene; matches evaluate.py --repeats")
     g.add_argument("--eth3d-seed", type=int, default=1234,
                    help="frame-sampling seed for ETH3D probe windows")
-    g.add_argument("--eth3d-sampling", default="covisibility",
-                   choices=("covisibility", "contiguous", "random"))
+    g.add_argument("--eth3d-sampling", default="window",
+                   choices=SAMPLING_CHOICES)
+    g.add_argument("--eth3d-window-size", type=int, default=DEFAULT_WINDOW_SIZE,
+                   help="temporal window for --eth3d-sampling window")
     g.add_argument("--eth3d-num-frames", type=int, default=None,
                    help="frames per ETH3D window (default: --num-frames from training)")
     g.add_argument("--eth3d-max-windows", type=int, default=0,
@@ -222,6 +224,7 @@ def main() -> int:
                     num_frames=args.num_frames,
                     resolution=args.resolution,
                     sampling=sampling,
+                    window_size=args.window_size,
                     augment=augment,
                     seed=seed,
                     depth_root=depth_root,
@@ -275,7 +278,7 @@ def main() -> int:
 
     val_loaders: dict[str, DataLoader] = {}
     if args.val_every and not args.overfit:
-        for name, dataset in make_split("val", augment=False, seed=1234, sampling="covisibility").items():
+        for name, dataset in make_split("val", augment=False, seed=1234, sampling=args.sampling).items():
             val_loaders[name] = DataLoader(
                 TaggedDataset(dataset, name),
                 batch_size=args.batch_size,
@@ -298,6 +301,7 @@ def main() -> int:
             num_frames=args.eth3d_num_frames,
             resolution=args.resolution,
             sampling=args.eth3d_sampling,
+            window_size=args.eth3d_window_size,
             dense_only=False,
             repeats=args.eth3d_repeats,
             seed=args.eth3d_seed,

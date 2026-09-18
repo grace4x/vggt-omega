@@ -57,6 +57,11 @@ from vggt_omega.utils.pose_enc import extri_intri_to_pose_encoding
 # far tail that `scene_scale` legitimately depends on survives it untouched.
 SCALE_OUTLIER_FACTOR = 100.0
 
+# VGGT-Omega App. A.1 samples video frames from a local temporal window, not by
+# covisibility. `window` is that recipe; the other three are the older knobs.
+SAMPLING_CHOICES = ("window", "covisibility", "contiguous", "random")
+DEFAULT_WINDOW_SIZE = 100
+
 
 class DL3DVDataset(Dataset):
     def __init__(
@@ -66,8 +71,9 @@ class DL3DVDataset(Dataset):
         num_frames: int = 8,
         resolution: int | None = None,
         patch_size: int = 16,
-        sampling: str = "covisibility",
+        sampling: str = "window",
         min_covisibility: float = 0.1,
+        window_size: int = DEFAULT_WINDOW_SIZE,
         augment: bool = True,
         seed: int | None = None,
         image_hw: tuple[int, int] | None = None,
@@ -120,11 +126,19 @@ class DL3DVDataset(Dataset):
         # aspect ratio too. Keep one shape and drop the rest.
         self.image_hw = self._select_shape(image_hw, split)
 
+        if sampling not in SAMPLING_CHOICES:
+            raise ValueError(f"sampling must be one of {SAMPLING_CHOICES}, got {sampling!r}")
+        if sampling == "window" and window_size < num_frames:
+            raise ValueError(
+                f"window_size={window_size} must be >= num_frames={num_frames}"
+            )
+
         self.num_frames = num_frames
         self.resolution = resolution
         self.patch_size = patch_size
         self.sampling = sampling
         self.min_covisibility = min_covisibility
+        self.window_size = window_size
         self.augment = augment and split == "train"
         self.seed = seed
 
@@ -173,9 +187,20 @@ class DL3DVDataset(Dataset):
             return np.array(sorted(rng.sample(range(n), self.num_frames)))
 
         if self.sampling == "contiguous":
-            # DL3DV scenes are videos: a window gives smooth, high-overlap trajectories.
+            # Exactly `num_frames` neighbours. Tighter than `window`, which first
+            # picks a longer clip and then subsamples it.
             start = rng.randrange(n - self.num_frames + 1)
             return np.arange(start, start + self.num_frames)
+
+        if self.sampling == "window":
+            # Paper App. A.1: for temporally ordered sequences, sample from a
+            # local temporal window rather than by covisibility. A scene shorter
+            # than the window is the whole trajectory, so this falls back to
+            # `random` -- which is also what an unordered set (MegaSynth's 24
+            # views) should do.
+            w = min(self.window_size, n)
+            start = rng.randrange(n - w + 1)
+            return np.array(sorted(rng.sample(range(start, start + w), self.num_frames)))
 
         # Covisibility walk: seed at a random frame, then repeatedly add a frame
         # that still overlaps the set. Produces harder, wider-baseline tuples
@@ -499,6 +524,23 @@ def crop_batch_to(batch: dict, crop_hw: tuple[int, int]) -> dict:
     return out
 
 
+class FovCropCollate:
+    """`collate` plus a fixed principal-point crop; see `crop_batch_to`.
+
+    Unlike `FovJitterCollate` this does not randomise: every batch is cropped to
+    exactly `crop_hw`, so the whole run sits at one frustum. On the 224x384 DL3DV
+    set, `208 208` is ~60 deg on both axes. Val should use the same crop so the
+    in-run numbers match the training camera, not the stored frame.
+    """
+
+    def __init__(self, collate, crop_hw: tuple[int, int]):
+        self.collate = collate
+        self.crop_hw = (int(crop_hw[0]), int(crop_hw[1]))
+
+    def __call__(self, batch: list[dict]) -> dict:
+        return crop_batch_to(self.collate(batch), self.crop_hw)
+
+
 class FovJitterCollate:
     """`collate` plus a per-batch principal-point crop; see `crop_batch_to`.
 
@@ -565,11 +607,40 @@ def collate_scenes(batch: list[dict]) -> dict:
     return out
 
 
+def _selftest_sampling() -> None:
+    """Window sampling stays inside a local clip; short scenes fall back to random."""
+    dummy = DL3DVDataset.__new__(DL3DVDataset)
+    dummy.num_frames = 8
+    dummy.sampling = "window"
+    dummy.window_size = 100
+    dummy.min_covisibility = 0.1
+    covis = np.eye(300, dtype=np.float16)
+    rng = random.Random(0)
+    sel = dummy._sample_frames(covis, rng)
+    assert len(sel) == 8 and list(sel) == sorted(sel.tolist())
+    assert int(sel.max() - sel.min()) < 100
+    dummy.window_size = 400
+    sel = dummy._sample_frames(np.eye(24, dtype=np.float16), random.Random(1))
+    assert len(sel) == 8 and int(sel.min()) >= 0 and int(sel.max()) < 24
+
+
 if __name__ == "__main__":
+    _selftest_sampling()
+    print("sampling self-test ok")
+
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root", required=True)
+    parser.add_argument("--root", default=None)
+    parser.add_argument("--depth-root", default=None)
+    parser.add_argument("--dense-only", action="store_true")
+    parser.add_argument("--split", default="train")
+    parser.add_argument("--num-frames", type=int, default=8)
+    parser.add_argument("--resolution", type=int, default=None)
+    parser.add_argument("--n", type=int, default=3)
+    args = parser.parse_args()
+    if args.root is None:
+        raise SystemExit(0)
     parser.add_argument("--depth-root", default=None)
     parser.add_argument("--dense-only", action="store_true")
     parser.add_argument("--split", default="train")

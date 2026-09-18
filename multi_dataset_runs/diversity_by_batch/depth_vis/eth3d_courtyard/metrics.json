@@ -1,0 +1,31 @@
+{
+  "dataset": "eth3d",
+  "scene": "courtyard",
+  "scene_scale": 9.597057342529297,
+  "image_hw": [
+    256,
+    384
+  ],
+  "num_frames": 8,
+  "scale_ratio_median": 0.8210136294364929,
+  "abs_rel_raw": 0.16979490220546722,
+  "abs_rel_aligned": 0.1836296170949936,
+  "delta_1.25_aligned": 0.5651644468307495,
+  "frames": [
+    {
+      "frame": 0,
+      "abs_rel_aligned_pixels": 0.10898110270500183,
+      "valid_frac": 0.7712300618489584
+    },
+    {
+      "frame": 3,
+      "abs_rel_aligned_pixels": 0.061697885394096375,
+      "valid_frac": 0.7555643717447916
+    },
+    {
+      "frame": 7,
+      "abs_rel_aligned_pixels": 0.35899338126182556,
+      "valid_frac": 0.694366455078125
+    }
+  ]
+}

@@ -18,7 +18,7 @@ from typing import Any
 import torch
 from torch.utils.data import DataLoader
 
-from training.dl3dv_dataset import DL3DVDataset, collate_scenes
+from training.dl3dv_dataset import DEFAULT_WINDOW_SIZE, DL3DVDataset, collate_scenes
 
 
 @dataclass
@@ -28,7 +28,8 @@ class Eth3dProbeConfig:
     split: str = "all"
     num_frames: int | None = None
     resolution: int | None = None
-    sampling: str = "covisibility"
+    sampling: str = "window"
+    window_size: int = DEFAULT_WINDOW_SIZE
     dense_only: bool = False
     repeats: int = 3
     seed: int = 1234
@@ -47,6 +48,7 @@ def build_eth3d_dataset(cfg: Eth3dProbeConfig, *, train_num_frames: int | None, 
         num_frames=num_frames,
         resolution=resolution,
         sampling=cfg.sampling,
+        window_size=cfg.window_size,
         augment=False,
         seed=cfg.seed,
         depth_root=cfg.depth_root,
@@ -93,6 +95,7 @@ def collect_eth3d_probe_batches(
         "image_hw": dataset.image_hw,
         "split": cfg.split,
         "sampling": cfg.sampling,
+        "window_size": cfg.window_size,
         "seed": cfg.seed,
     }
     return batches, meta

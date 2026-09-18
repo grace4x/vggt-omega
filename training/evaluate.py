@@ -8,9 +8,9 @@ download (e.g. DL3DV's 960P benchmark scenes) drops straight in:
     python training/evaluate.py --checkpoint runs/small-v5/latest.pt \
         --data-root ~/dl3dv-eval --depth-root ~/dl3dv-eval-depth --split all
 
-Every setting the numbers depend on (preset, num_frames, resolution, dense_only)
-defaults to whatever the checkpoint was trained with, read back out of the
-checkpoint's own `args`, so the eval matches the run unless you say otherwise.
+Every setting the numbers depend on (preset, num_frames, resolution, dense_only,
+sampling) defaults to whatever the checkpoint was trained with, read back out of
+the checkpoint's own `args`, so the eval matches the run unless you say otherwise.
 
 Several checkpoints in one go, sharing one pass over the data per checkpoint:
 
@@ -56,7 +56,13 @@ from torch.utils.data import DataLoader
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from training.dl3dv_dataset import DL3DVDataset, collate_scenes  # noqa: E402
+from training.dl3dv_dataset import (  # noqa: E402
+    DEFAULT_WINDOW_SIZE,
+    DL3DVDataset,
+    SAMPLING_CHOICES,
+    collate_scenes,
+    crop_batch_to,
+)
 from training.losses import (  # noqa: E402
     VGGTOmegaLoss,
     depth_metrics,
@@ -203,6 +209,12 @@ def evaluate_checkpoint(model, dataset, criterion, device, args) -> tuple[dict, 
 
         for batch in loader:
             tensors = {k: (v.to(device, non_blocking=True) if torch.is_tensor(v) else v) for k, v in batch.items()}
+            if args.eval_crop is not None:
+                # Principal-point crop of the eval frustum -- the only operation that
+                # narrows FoV without touching image content or invented pixels. See
+                # `crop_batch_to`; it re-derives pose_enc and the unit-space scale over
+                # what is left, so every target stays consistent with the new frame.
+                tensors = crop_batch_to(tensors, tuple(args.eval_crop))
             predictions = model(tensors["images"])
 
             rot, trans = pose_pair_errors(predictions["pose_enc"], tensors["pose_enc"])
@@ -298,7 +310,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--dense-only", action="store_true", default=None, help="drop scenes with no dense depth")
     p.add_argument("--no-dense-only", action="store_false", dest="dense_only",
                    help="keep them, scoring sparse COLMAP depth where DA3 is missing")
-    p.add_argument("--sampling", default="covisibility", choices=("covisibility", "contiguous", "random"))
+    p.add_argument("--sampling", default=None, choices=SAMPLING_CHOICES,
+                   help="default: the checkpoint's own, else window")
+    p.add_argument("--window-size", type=int, default=None,
+                   help="temporal window for --sampling window; default: checkpoint's own, else "
+                        f"{DEFAULT_WINDOW_SIZE}")
     p.add_argument("--scene-list", type=Path, default=None, help="restrict to `subset/scene` lines in this file")
     p.add_argument("--max-scenes", type=int, default=0, help="first N scenes only; for a smoke test")
     p.add_argument("--repeats", type=int, default=1, help="frame windows sampled per scene")
@@ -307,6 +323,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--workers", type=int, default=4)
     p.add_argument("--seed", type=int, default=1234)
     p.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    p.add_argument("--eval-crop", type=int, nargs=2, default=None, metavar=("H", "W"),
+                   help="centre-crop every eval window to HxW before the forward pass, to score the\n"
+                        "model at a narrower field of view than the set was preprocessed at. Both\n"
+                        "sides should be multiples of the preset's patch size. Cropping keeps the\n"
+                        "focal lengths and moves only (H, W) and the principal point, so it is\n"
+                        "exactly what a narrower lens on the same camera would have seen -- which\n"
+                        "is what makes it a fair way to ask whether a checkpoint's advantage is\n"
+                        "geometry or a field-of-view prior inherited from its training mix.")
     p.add_argument("--progress", type=int, default=25, help="print every N batches; 0 silences it")
     return p
 
@@ -328,6 +352,11 @@ def main() -> int:
     num_frames = args.num_frames or reference.get("num_frames") or 16
     resolution = args.resolution if args.resolution is not None else reference.get("resolution")
     dense_only = args.dense_only if args.dense_only is not None else bool(reference.get("dense_only"))
+    sampling = args.sampling or reference.get("sampling") or "window"
+    window_size = (
+        args.window_size if args.window_size is not None
+        else int(reference.get("window_size") or DEFAULT_WINDOW_SIZE)
+    )
     depth_root = args.depth_root
     if depth_root is None and reference.get("depth_root"):
         print(f"[eval] no --depth-root given; the run used {reference['depth_root']} -- falling back to sparse GT")
@@ -337,7 +366,8 @@ def main() -> int:
         split=args.split,
         num_frames=num_frames,
         resolution=resolution,
-        sampling=args.sampling,
+        sampling=sampling,
+        window_size=window_size,
         augment=False,
         seed=args.seed,
         depth_root=depth_root,
@@ -361,7 +391,11 @@ def main() -> int:
 
     print(
         f"[eval] {len(dataset)} scenes x {args.repeats} window(s)  frames={num_frames}  "
-        f"hw={dataset.image_hw}  sampling={args.sampling}  depth={'dense' if depth_root else 'sparse'}"
+        f"sampling={sampling}"
+        + (f"/{window_size}" if sampling == "window" else "")
+        + f"  hw={dataset.image_hw}"
+        + (f"->crop{tuple(args.eval_crop)}" if args.eval_crop else "")
+        + f"  depth={'dense' if depth_root else 'sparse'}"
     )
 
     rows, results = [], {}
@@ -393,7 +427,9 @@ def main() -> int:
             "num_frames": num_frames,
             "resolution": resolution,
             "dense_only": dense_only,
-            "sampling": args.sampling,
+            "sampling": sampling,
+            "window_size": window_size,
+            "eval_crop": list(args.eval_crop) if args.eval_crop else None,
             "repeats": args.repeats,
             "seed": args.seed,
             "num_scenes": len(dataset),

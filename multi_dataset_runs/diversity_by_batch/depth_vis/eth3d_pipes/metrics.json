@@ -1,0 +1,31 @@
+{
+  "dataset": "eth3d",
+  "scene": "pipes",
+  "scene_scale": 2.6624178886413574,
+  "image_hw": [
+    256,
+    384
+  ],
+  "num_frames": 8,
+  "scale_ratio_median": 1.1045095920562744,
+  "abs_rel_raw": 0.12794746458530426,
+  "abs_rel_aligned": 0.10337606072425842,
+  "delta_1.25_aligned": 0.9210449457168579,
+  "frames": [
+    {
+      "frame": 0,
+      "abs_rel_aligned_pixels": 0.06899165362119675,
+      "valid_frac": 0.84039306640625
+    },
+    {
+      "frame": 3,
+      "abs_rel_aligned_pixels": 0.09637303650379181,
+      "valid_frac": 0.664215087890625
+    },
+    {
+      "frame": 7,
+      "abs_rel_aligned_pixels": 0.09000953286886215,
+      "valid_frac": 0.7491658528645834
+    }
+  ]
+}

@@ -34,7 +34,7 @@ HERE = Path(__file__).parent
 DEFAULT_RUN = ROOT / "runs/default"
 sys.path.insert(0, str(ROOT))
 
-from training.dl3dv_dataset import DL3DVDataset, collate_scenes  # noqa: E402
+from training.dl3dv_dataset import DEFAULT_WINDOW_SIZE, DL3DVDataset, collate_scenes  # noqa: E402
 from training.evaluate import read_payload  # noqa: E402
 from training.losses import VGGTOmegaLoss  # noqa: E402
 from training.model_config import build_model  # noqa: E402
@@ -123,6 +123,7 @@ def build_train_dataset(
     resolution: int | None,
     dense_only: bool,
     sampling: str,
+    window_size: int,
     seed: int,
     max_scenes: int,
 ) -> ConcatDataset:
@@ -135,6 +136,7 @@ def build_train_dataset(
                 num_frames=num_frames,
                 resolution=resolution,
                 sampling=sampling,
+                window_size=window_size,
                 augment=False,
                 seed=seed,
                 depth_root=depth_root,
@@ -152,6 +154,7 @@ def build_train_dataset(
                 num_frames=num_frames,
                 resolution=resolution,
                 sampling=sampling,
+                window_size=window_size,
                 augment=False,
                 seed=seed,
                 depth_root=depth,
@@ -472,7 +475,8 @@ def main() -> int:
         num_frames = train_args.get("num_frames") or 16
         resolution = train_args.get("resolution")
         dense_only = bool(train_args.get("dense_only"))
-        sampling = train_args.get("sampling") or "covisibility"
+        sampling = train_args.get("sampling") or "window"
+        window_size = int(train_args.get("window_size") or DEFAULT_WINDOW_SIZE)
         print(f"checkpoint {args.checkpoint.name} step {step} preset {preset} frames {num_frames} device {device}", flush=True)
 
         model = build_model(preset, use_checkpoint=True)
@@ -497,6 +501,7 @@ def main() -> int:
             resolution=resolution,
             dense_only=dense_only,
             sampling=sampling,
+            window_size=window_size,
             seed=args.seed,
             max_scenes=args.max_scenes,
         )

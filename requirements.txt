@@ -5,3 +5,5 @@ Pillow
 einops
 safetensors
 opencv-python
+h5py
+boto3

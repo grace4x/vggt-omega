@@ -1,0 +1,31 @@
+{
+  "dataset": "scannet",
+  "scene": "scene0081_00",
+  "scene_scale": 2.087972402572632,
+  "image_hw": [
+    224,
+    384
+  ],
+  "num_frames": 8,
+  "scale_ratio_median": 0.9301366806030273,
+  "abs_rel_raw": 0.0778898149728775,
+  "abs_rel_aligned": 0.048419494181871414,
+  "delta_1.25_aligned": 0.9940117001533508,
+  "frames": [
+    {
+      "frame": 0,
+      "abs_rel_aligned_pixels": 0.0346362479031086,
+      "valid_frac": 0.9558686755952381
+    },
+    {
+      "frame": 3,
+      "abs_rel_aligned_pixels": 0.06888245791196823,
+      "valid_frac": 0.9335123697916666
+    },
+    {
+      "frame": 7,
+      "abs_rel_aligned_pixels": 0.05245464667677879,
+      "valid_frac": 0.9637509300595238
+    }
+  ]
+}

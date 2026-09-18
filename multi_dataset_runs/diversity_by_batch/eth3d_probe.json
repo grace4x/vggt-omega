@@ -1,0 +1,13 @@
+{
+ "n_scenes": 13,
+ "n_windows": 39,
+ "repeats": 3,
+ "num_frames": 8,
+ "image_hw": [
+  256,
+  384
+ ],
+ "split": "all",
+ "sampling": "covisibility",
+ "seed": 1234
+}

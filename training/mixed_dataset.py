@@ -15,12 +15,19 @@ way to learn that the sets were preprocessed differently.
 Mixing is proportional to scene count by default. `weights` oversamples a
 dataset by listing its scenes more than once per epoch, for when the smaller set
 deserves more attention than its size gives it.
+
+That listing is fixed for the run: a weight of 0.5 picks a random half under
+`--seed` and then trains on those scenes every epoch. `dataset_mix_weights` is
+the other experiment -- keep every scene eligible and let a with-replacement
+sampler draw each dataset at a configured rate (equal by default, or a custom
+`--mix-proportions` split), so the mix is not a frozen subset.
 """
 
 from __future__ import annotations
 
 import numpy as np
-from torch.utils.data import ConcatDataset, Dataset, Subset
+import torch
+from torch.utils.data import ConcatDataset, Dataset, Sampler, Subset
 
 
 class TaggedDataset(Dataset):
@@ -126,6 +133,96 @@ def build_concat_trainset(
     return Subset(concat, indices), names, sizes, counts
 
 
+def dataset_mix_weights(
+    names: list[str], sizes: list[int], proportions: dict[str, float] | None = None
+) -> np.ndarray:
+    """Per-index weights so each dataset occupies a configured share of the stream.
+
+    With `proportions=None` every dataset gets an equal share `1/K` -- this is
+    `--equal-mix`. Scene i in dataset n then has weight `share_n / |D_n|`. A draw
+    from the concatenated pool is dataset-share-uniform, then scene-uniform within
+    the dataset -- the larger set is not over-represented just because it has
+    more scenes. Pair with `WeightedEpochSampler` so the mix is redrawn every
+    epoch rather than frozen into a `Subset`.
+
+    `proportions` (e.g. `{"dl3dv": 0.5, "megasynth": 0.5}`) must name exactly the
+    configured datasets -- a silently-ignored typo would otherwise starve a
+    dataset without saying so. Values are relative and normalised to sum to 1,
+    so `{"dl3dv": 2, "megasynth": 1}` is the same mix as `{"dl3dv": 2/3,
+    "megasynth": 1/3}`.
+    """
+    if len(names) != len(sizes) or not names:
+        raise ValueError(f"names and sizes must be non-empty and aligned, got {names!r} / {sizes!r}")
+    if any(s <= 0 for s in sizes):
+        raise ValueError(f"every dataset needs at least one scene, got {dict(zip(names, sizes))}")
+    if proportions is None:
+        shares = {n: 1.0 / len(names) for n in names}
+    else:
+        if set(proportions) != set(names):
+            raise ValueError(
+                f"mix proportions must name exactly the configured datasets {sorted(names)}, "
+                f"got {sorted(proportions)}"
+            )
+        total = sum(proportions.values())
+        if total <= 0 or any(v <= 0 for v in proportions.values()):
+            raise ValueError(f"mix proportions must be positive, got {proportions}")
+        shares = {n: v / total for n, v in proportions.items()}
+    weights = np.empty(sum(sizes), dtype=np.float64)
+    offset = 0
+    for name, size in zip(names, sizes):
+        weights[offset : offset + size] = shares[name] / size
+        offset += size
+    return weights
+
+
+class WeightedEpochSampler(Sampler[int]):
+    """Draw `num_samples` indices per epoch with replacement, sharded across ranks.
+
+    `WeightedRandomSampler` and `DistributedSampler` cannot be composed -- the
+    former is not a distributed sampler and the latter cannot weight -- so this does
+    both: one deterministic draw of the whole epoch from `seed + epoch`, identical on
+    every rank, then rank r takes every world_size-th index. Every rank drawing the
+    same epoch and slicing it is what keeps the realised mixture equal to the target
+    globally rather than only in expectation per rank.
+
+    `set_epoch` matches `DistributedSampler`'s interface so the training loop can
+    call it unconditionally.
+    """
+
+    def __init__(
+        self,
+        weights: np.ndarray | torch.Tensor,
+        num_samples: int | None = None,
+        *,
+        rank: int = 0,
+        world_size: int = 1,
+        seed: int = 0,
+        drop_last: bool = True,
+    ) -> None:
+        self.weights = torch.as_tensor(np.asarray(weights, dtype=np.float64), dtype=torch.double)
+        if self.weights.ndim != 1 or len(self.weights) == 0:
+            raise ValueError("weights must be a non-empty 1-D vector")
+        if (self.weights < 0).any() or self.weights.sum() <= 0:
+            raise ValueError("weights must be non-negative with a positive sum")
+        self.total = int(num_samples if num_samples is not None else len(self.weights))
+        self.rank, self.world_size, self.seed = rank, world_size, seed
+        if drop_last:
+            # Same count on every rank, so no rank runs dry mid-step under DDP.
+            self.total -= self.total % world_size
+        self.epoch = 0
+
+    def set_epoch(self, epoch: int) -> None:
+        self.epoch = epoch
+
+    def __len__(self) -> int:
+        return self.total // self.world_size
+
+    def __iter__(self):
+        generator = torch.Generator().manual_seed(self.seed + 977 * self.epoch)
+        drawn = torch.multinomial(self.weights, self.total, replacement=True, generator=generator)
+        yield from drawn[self.rank :: self.world_size].tolist()
+
+
 def collate_mixed(batch: list[dict]) -> dict:
     """`collate_scenes` plus the string `dataset` tag."""
     from training.dl3dv_dataset import collate_scenes
@@ -164,6 +261,36 @@ if __name__ == "__main__":
         print(f"weights={weights or 'proportional'}: epoch={len(dataset)} samples, "
               f"sizes={dict(zip(names, sizes))}, mix="
               f"{ {n: round(seen[n] / total, 3) for n in names} }")
+
+    dataset, names, sizes, _ = build_concat_trainset(parts, None, seed=0)
+    mix_w = dataset_mix_weights(names, sizes)
+    assert len(mix_w) == len(dataset)
+    offset = 0
+    for name, size in zip(names, sizes):
+        share = float(mix_w[offset : offset + size].sum())
+        assert abs(share - 1.0 / len(names)) < 1e-9, (name, share)
+        offset += size
+    print(f"equal-mix: pool={len(dataset)}  per-dataset share="
+          f"{ {n: round(1.0 / len(names), 3) for n in names} }")
+
+    custom_proportions = {"dl3dv": 0.5, "megasynth": 0.5}
+    mix_w = dataset_mix_weights(["dl3dv", "megasynth"], [sizes[names.index("dl3dv")], sizes[names.index("megasynth")]],
+                                 custom_proportions)
+    offset = 0
+    for name in ("dl3dv", "megasynth"):
+        size = sizes[names.index(name)]
+        share = float(mix_w[offset : offset + size].sum())
+        assert abs(share - 0.5) < 1e-9, (name, share)
+        offset += size
+    print(f"custom mix-proportions={custom_proportions}: shares match")
+
+    mix_w = dataset_mix_weights(names, sizes)
+    drawn = list(WeightedEpochSampler(mix_w, len(dataset), seed=0))
+    shards = [list(WeightedEpochSampler(mix_w, len(dataset), rank=r, world_size=4, seed=0))
+              for r in range(4)]
+    assert len({len(s) for s in shards}) == 1, [len(s) for s in shards]
+    assert sorted(i for s in shards for i in s) == sorted(drawn[: 4 * len(shards[0])])
+    print(f"weighted sampler: 4 ranks x {len(shards[0])} = {4 * len(shards[0])} (epoch {len(drawn)})")
 
     mixed = {"dl3dv": Fake(10, (224, 384)), "scannet": Fake(10, (288, 384))}
     print("shape check (bs=1, mismatched):", assert_stackable(mixed, batch_size=1))

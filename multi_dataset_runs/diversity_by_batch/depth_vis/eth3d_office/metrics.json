@@ -1,0 +1,31 @@
+{
+  "dataset": "eth3d",
+  "scene": "office",
+  "scene_scale": 2.6367111206054688,
+  "image_hw": [
+    256,
+    384
+  ],
+  "num_frames": 8,
+  "scale_ratio_median": 1.0777140855789185,
+  "abs_rel_raw": 0.13336506485939026,
+  "abs_rel_aligned": 0.15321682393550873,
+  "delta_1.25_aligned": 0.784579873085022,
+  "frames": [
+    {
+      "frame": 0,
+      "abs_rel_aligned_pixels": 0.0686875656247139,
+      "valid_frac": 0.8042399088541666
+    },
+    {
+      "frame": 3,
+      "abs_rel_aligned_pixels": 0.2596966326236725,
+      "valid_frac": 0.9423116048177084
+    },
+    {
+      "frame": 7,
+      "abs_rel_aligned_pixels": 0.13647450506687164,
+      "valid_frac": 0.7096455891927084
+    }
+  ]
+}

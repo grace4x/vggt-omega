@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Train VGGT-Omega from scratch on preprocessed DL3DV, ScanNet v2 and MegaSynth.
+"""Train VGGT-Omega from scratch on preprocessed DL3DV, ScanNet v2, MegaSynth and Hypersim.
 
 Single GPU:
 
@@ -8,13 +8,15 @@ Single GPU:
         --num-frames 16 --max-steps 100000 --checkpointing
 
 Several datasets at once (see `mixed_dataset.py`) -- each is opt-in through its
-own root, and any combination of the three works:
+own root, and any combination of the four works:
 
     python training/train.py \
         --data-root ~/dl3dv-train --depth-root ~/dl3dv-depth \
         --scannet-root ~/scannet-train \
         --megasynth-root ~/megasynth-train \
-        --dl3dv-weight 1 --scannet-weight 1 --megasynth-weight 1 \
+        --hypersim-root ~/hypersim-train \
+        --tartanair-root ~/tartanair-train \
+        --dl3dv-weight 1 --scannet-weight 1 --megasynth-weight 1 --hypersim-weight 1 --tartanair-weight 1 \
         --preset small --out runs/mixed
 
 At 1/1/1 the mix is proportional to scene count, so DL3DV's ~4900 train scenes
@@ -27,8 +29,17 @@ the same experiment:
 The first keeps all the data and repeats the smaller set; the second keeps the
 step count per scene equal and throws data away. Prefer the first unless the
 point is to hold DL3DV's *diversity* down. `--dl3dv-weight 0.5` is a third
-option, but it picks its half at random under --seed rather than taking a
-prefix, so it is not reproducible across a --seed change.
+option, but it picks its half at random under --seed and then freezes that
+subset for the run, so it is not "half the stream" and it is not reproducible
+across a --seed change. `--equal-mix` is the remaining experiment: every scene
+stays eligible, and each epoch is redrawn with replacement so each configured
+dataset is 1/K of the stream. A DL3DV+MegaSynth run is then 50/50 without a
+`--scene-list`. `--mix-proportions` is the same mechanism with an arbitrary
+split instead of an even one, e.g. `--mix-proportions dl3dv=0.5,megasynth=0.5`
+for a 50/50 run, or `--mix-proportions dl3dv=0.5,megasynth=0.25,hypersim=0.25`
+to give real data half the stream and split the rest across both synthetic
+sets. It must name exactly the datasets configured via `--*-root`, and is
+mutually exclusive with `--equal-mix` and `--*-weight`.
 
 MegaSynth pulls the same levers in the other direction: it is procedurally
 generated, so there is as much of it as you are willing to download, and left
@@ -36,7 +47,16 @@ unweighted it can swamp both real sets. `--megasynth-weight 0.3` or
 `--megasynth-scenes 2000` holds it to a supporting share. The paper it comes
 from uses it as a co-training set rather than a replacement, and its scenes have
 no semantics at all -- geometry primitives, no objects -- so the real data is
-what carries anything semantic the backbone learns.
+what carries anything semantic the backbone learns. Hypersim is a third
+synthetic set on the same footing as MegaSynth -- also renderable without limit,
+also gated by `--hypersim-weight` / `--hypersim-scenes` -- but unlike MegaSynth
+it is photorealistic indoor scenes with real objects and materials, so it is
+closer to ScanNet in content even though its depth is exact like MegaSynth's.
+TartanAir is a fourth synthetic set, also gated by `--tartanair-weight` /
+`--tartanair-scenes`: AirSim-rendered outdoor/indoor environments built for
+SLAM, with exact depth like the other two but no held-out split of its own --
+`download_tartanair.py` holds out whole environments instead of trajectories,
+since consecutive frames within one environment are highly correlated.
 
 Loss and val metrics are reported per dataset as well as pooled. Every set must
 be preprocessed at the same resolution, since a batch spanning two shapes cannot
@@ -83,12 +103,20 @@ from torch.utils.tensorboard import SummaryWriter
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from training.dl3dv_dataset import DL3DVDataset, FovJitterCollate  # noqa: E402
+from training.dl3dv_dataset import (  # noqa: E402
+    DEFAULT_WINDOW_SIZE,
+    DL3DVDataset,
+    FovCropCollate,
+    FovJitterCollate,
+    SAMPLING_CHOICES,
+)
 from training.mixed_dataset import (  # noqa: E402
     TaggedDataset,
+    WeightedEpochSampler,
     assert_stackable,
     build_concat_trainset,
     collate_mixed,
+    dataset_mix_weights,
 )
 from training.losses import VGGTOmegaLoss, depth_metrics, pose_metrics  # noqa: E402
 from training.model_config import PRESETS, build_model, parameter_summary  # noqa: E402
@@ -234,6 +262,26 @@ def save_checkpoint(path: Path, model, optimizer, scheduler, step: int, args) ->
 # --------------------------------------------------------------------------- #
 
 
+def parse_mix_proportions(spec: str) -> dict[str, float]:
+    """'dl3dv=0.5,megasynth=0.5' -> {'dl3dv': 0.5, 'megasynth': 0.5}."""
+    proportions: dict[str, float] = {}
+    for part in spec.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if "=" not in part:
+            raise SystemExit(f"--mix-proportions expects NAME=FRAC pairs, got {part!r}")
+        name, _, value = part.partition("=")
+        name = name.strip()
+        try:
+            proportions[name] = float(value)
+        except ValueError:
+            raise SystemExit(f"--mix-proportions: {value!r} for {name!r} is not a number")
+    if not proportions:
+        raise SystemExit("--mix-proportions needs at least one NAME=FRAC pair")
+    return proportions
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--data-root", type=Path, default=None, help="output of preprocess_dl3dv.py")
@@ -244,6 +292,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--megasynth-root", type=Path, default=None, help="output of download_megasynth.py")
     p.add_argument("--megasynth-depth-root", type=Path, default=None,
                    help="dense MegaSynth depth; defaults to <megasynth-root>/depth")
+    p.add_argument("--hypersim-root", type=Path, default=None, help="output of download_hypersim.py")
+    p.add_argument("--hypersim-depth-root", type=Path, default=None,
+                   help="dense Hypersim depth; defaults to <hypersim-root>/depth")
+    p.add_argument("--tartanair-root", type=Path, default=None, help="output of download_tartanair.py")
+    p.add_argument("--tartanair-depth-root", type=Path, default=None,
+                   help="dense TartanAir depth; defaults to <tartanair-root>/depth")
     p.add_argument("--dl3dv-weight", type=float, default=1.0,
                    help="times each DL3DV scene is listed per epoch (1.0 = once)")
     p.add_argument("--scannet-weight", type=float, default=1.0,
@@ -253,6 +307,26 @@ def build_parser() -> argparse.ArgumentParser:
                    help="times each MegaSynth scene is listed per epoch. Synthetic scenes are\n"
                         "cheap to add and easily outnumber the real ones, so this is the knob\n"
                         "that stops them dominating -- see --megasynth-scenes for the other way")
+    p.add_argument("--hypersim-weight", type=float, default=1.0,
+                   help="times each Hypersim scene is listed per epoch. Like MegaSynth this is\n"
+                        "rendered rather than captured, so it is easy to have far more of it than\n"
+                        "of the real sets -- see --hypersim-scenes for the other way")
+    p.add_argument("--tartanair-weight", type=float, default=1.0,
+                   help="times each TartanAir scene is listed per epoch. Also a render, on the\n"
+                        "same footing as MegaSynth/Hypersim -- see --tartanair-scenes for the\n"
+                        "other way")
+    p.add_argument("--equal-mix", action="store_true",
+                   help="draw each configured dataset at equal rate every epoch (with replacement)\n"
+                        "from the full train pools. A DL3DV+MegaSynth run is then 50/50 without\n"
+                        "freezing a --scene-list. Incompatible with --*-weight other than 1.0")
+    p.add_argument("--mix-proportions", type=str, default=None, metavar="NAME=FRAC,...",
+                   help="like --equal-mix but with an arbitrary split instead of an even one, e.g.\n"
+                        "'dl3dv=0.5,megasynth=0.5' for 50/50 real/synthetic, or\n"
+                        "'dl3dv=0.5,megasynth=0.25,hypersim=0.25' to split the synthetic half across\n"
+                        "both rendered sets. Values are relative and normalised, so 'dl3dv=2,\n"
+                        "megasynth=1' is the same split as 'dl3dv=0.667,megasynth=0.333'. Must\n"
+                        "name exactly the datasets configured via --*-root. Incompatible with\n"
+                        "--equal-mix and --*-weight other than 1.0")
     p.add_argument("--dense-only", action="store_true", help="drop scenes with no dense depth (~12%%)")
     p.add_argument("--out", type=Path, default=Path("runs/vggt-omega-small"))
 
@@ -263,7 +337,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     p.add_argument("--num-frames", type=int, default=16)
     p.add_argument("--resolution", type=int, default=None, help="resize at load time; default keeps stored size")
-    p.add_argument("--sampling", default="covisibility", choices=("covisibility", "contiguous", "random"))
+    p.add_argument("--sampling", default="window", choices=SAMPLING_CHOICES,
+                   help="how to pick the S frames in a sample. `window` is the paper: a random\n"
+                        "local temporal clip of --window-size, then S frames from that clip.\n"
+                        "`contiguous` is a tight S-frame clip; `random` is the whole trajectory;\n"
+                        "`covisibility` walks overlapping views (the previous default)")
+    p.add_argument("--window-size", type=int, default=DEFAULT_WINDOW_SIZE,
+                   help="length of the local temporal window for --sampling window")
     p.add_argument("--batch-size", type=int, default=1, help="scenes per step per GPU")
     p.add_argument("--grad-accum", type=int, default=1)
     p.add_argument("--workers", type=int, default=8)
@@ -308,6 +388,10 @@ def build_parser() -> argparse.ArgumentParser:
                    help="train on only the first N DL3DV scenes (0 = all). The index order is\n"
                         "arbitrary, so this is a sample, not a filter -- but note it is a prefix,\n"
                         "so N < 976 stays inside the 1K subset")
+    p.add_argument("--fov-crop", type=int, nargs=2, default=None, metavar=("H", "W"),
+                   help="centre-crop every train and val batch to HxW. Unlike --fov-jitter this is\n"
+                        "a fixed frustum, not a random range. On the 224x384 DL3DV set, `208 208`\n"
+                        "is ~60 deg on both axes. Mutually exclusive with --fov-jitter.")
     p.add_argument("--fov-jitter", type=int, nargs=2, default=None, metavar=("MIN_H", "MIN_W"),
                    help="VGGT's FoV augmentation: crop each training batch around the principal\n"
                         "point to a random frame between MIN_H x MIN_W and the stored shape.\n"
@@ -319,6 +403,8 @@ def build_parser() -> argparse.ArgumentParser:
                         "default, which pins every sample at the stored frame's single FoV.")
     p.add_argument("--scannet-scenes", type=int, default=0, help="cap ScanNet at N train scenes (0 = all)")
     p.add_argument("--megasynth-scenes", type=int, default=0, help="cap MegaSynth at N train scenes (0 = all)")
+    p.add_argument("--hypersim-scenes", type=int, default=0, help="cap Hypersim at N train scenes (0 = all)")
+    p.add_argument("--tartanair-scenes", type=int, default=0, help="cap TartanAir at N train scenes (0 = all)")
     return p
 
 
@@ -359,10 +445,16 @@ def main() -> int:
     # writes the same on-disk contract; only the roots differ. Preprocess ScanNet
     # with `--target-hw 224 384 --fit crop` and the two are the same shape, so
     # mixing them needs nothing more than a ConcatDataset.
-    if args.data_root is None and args.scannet_root is None and args.megasynth_root is None:
+    if (
+        args.data_root is None
+        and args.scannet_root is None
+        and args.megasynth_root is None
+        and args.hypersim_root is None
+        and args.tartanair_root is None
+    ):
         raise SystemExit(
             "pass at least one of --data-root (DL3DV), --scannet-root (ScanNet), "
-            "--megasynth-root (MegaSynth)"
+            "--megasynth-root (MegaSynth), --hypersim-root (Hypersim), --tartanair-root (TartanAir)"
         )
 
     def make_split(split: str, *, augment: bool, seed: int | None, sampling: str) -> dict:
@@ -377,6 +469,15 @@ def main() -> int:
             # so every MegaSynth scene has it and `dense_only` is a no-op.
             ("megasynth", args.megasynth_root, args.megasynth_depth_root or
              (args.megasynth_root / "depth" if args.megasynth_root else None), False),
+            # Hypersim is also a complete synthetic render (V-Ray), same as
+            # MegaSynth: every scene has dense depth, so `dense_only` is a no-op.
+            ("hypersim", args.hypersim_root, args.hypersim_depth_root or
+             (args.hypersim_root / "depth" if args.hypersim_root else None), False),
+            # TartanAir is also a complete synthetic render (AirSim/Unreal),
+            # same as MegaSynth and Hypersim: every scene has dense depth, so
+            # `dense_only` is a no-op.
+            ("tartanair", args.tartanair_root, args.tartanair_depth_root or
+             (args.tartanair_root / "depth" if args.tartanair_root else None), False),
         )
         for name, root, depth_root, dense_only in sources:
             if root is None:
@@ -389,6 +490,7 @@ def main() -> int:
                     num_frames=args.num_frames,
                     resolution=args.resolution,
                     sampling=sampling,
+                    window_size=args.window_size,
                     augment=augment,
                     seed=seed,
                     depth_root=depth_root,
@@ -430,6 +532,8 @@ def main() -> int:
             "dl3dv": args.dl3dv_scenes,
             "scannet": args.scannet_scenes,
             "megasynth": args.megasynth_scenes,
+            "hypersim": args.hypersim_scenes,
+            "tartanair": args.tartanair_scenes,
         }.get(name, 0)
         if cap and cap < len(dataset.scenes):
             # A plain prefix. DL3DV's 1K..5K subsets are release batches, not
@@ -452,26 +556,61 @@ def main() -> int:
     # preprocessed at different resolutions.
     image_hw = assert_stackable(train_parts, args.batch_size)
 
-    weights = {
+    listed_weights = {
         "dl3dv": args.dl3dv_weight,
         "scannet": args.scannet_weight,
         "megasynth": args.megasynth_weight,
+        "hypersim": args.hypersim_weight,
+        "tartanair": args.tartanair_weight,
     }
+    custom_proportions = parse_mix_proportions(args.mix_proportions) if args.mix_proportions else None
+    if args.equal_mix and custom_proportions is not None:
+        raise SystemExit("--equal-mix and --mix-proportions are mutually exclusive")
+    weighted_mix = args.equal_mix or custom_proportions is not None
+    if weighted_mix:
+        flag = "--equal-mix" if args.equal_mix else "--mix-proportions"
+        if args.scene_list is not None:
+            raise SystemExit(f"{flag} samples the full pools; omit --scene-list")
+        if len(train_parts) < 2:
+            raise SystemExit(f"{flag} needs at least two datasets")
+        if any(abs(listed_weights[n] - 1.0) > 1e-9 for n in train_parts):
+            raise SystemExit(f"{flag} already sets the mix; omit --*-weight")
+        if custom_proportions is not None and set(custom_proportions) != set(train_parts):
+            raise SystemExit(
+                f"--mix-proportions must name exactly the configured datasets "
+                f"{sorted(train_parts)}, got {sorted(custom_proportions)}"
+            )
+        weights = None
+    else:
+        weights = listed_weights
     train_set, source_names, sizes, epoch_counts = build_concat_trainset(
         train_parts, weights, seed=args.seed
     )
 
-    # The FoV jitter crops a whole batch at once, so it belongs in the collate --
-    # `crop_batch_to` explains why the per-sample path cannot carry the shape. Only
-    # the train loader gets it: val has to stay comparable across steps and runs,
-    # and the model is evaluated at the stored frame.
+    # FoV crops belong in the collate -- `crop_batch_to` explains why the
+    # per-sample path cannot carry the shape. Jitter is train-only (val has to
+    # stay comparable across steps). A fixed `--fov-crop` is a camera protocol,
+    # so val uses it too.
+    if args.fov_crop is not None and args.fov_jitter is not None:
+        raise SystemExit("use only one of --fov-crop and --fov-jitter")
     train_collate = collate_mixed
-    if args.fov_jitter is not None:
+    val_collate = collate_mixed
+    if args.fov_crop is not None:
+        train_collate = val_collate = FovCropCollate(collate_mixed, args.fov_crop)
+    elif args.fov_jitter is not None:
         train_collate = FovJitterCollate(
             collate_mixed, args.fov_jitter, patch_size=PRESETS[args.preset].patch_size, seed=args.seed
         )
 
-    train_sampler = DistributedSampler(train_set, shuffle=True, drop_last=True) if world_size > 1 else None
+    if weighted_mix:
+        mix_weights = dataset_mix_weights(source_names, sizes, custom_proportions)
+        train_sampler = WeightedEpochSampler(
+            mix_weights, len(train_set), rank=rank, world_size=world_size, seed=args.seed
+        )
+    elif world_size > 1:
+        train_sampler = DistributedSampler(train_set, shuffle=True, drop_last=True)
+    else:
+        train_sampler = None
     train_loader = DataLoader(
         train_set,
         batch_size=args.batch_size,
@@ -487,7 +626,7 @@ def main() -> int:
     val_loaders: dict[str, DataLoader] = {}
     if args.val_every and not args.overfit:
         for name, dataset in make_split(
-            "val", augment=False, seed=1234, sampling="covisibility"
+            "val", augment=False, seed=1234, sampling=args.sampling
         ).items():
             # seed=1234 above fixes frame selection, so val numbers are
             # comparable across steps.
@@ -497,22 +636,37 @@ def main() -> int:
                 shuffle=False,
                 num_workers=max(args.workers // 2, 1),
                 pin_memory=True,
-                collate_fn=collate_mixed,
+                collate_fn=val_collate,
             )
 
     if is_main(rank):
-        mix = "  ".join(
-            f"{n}={s}" + (f"(x{c / s:.2g})" if c != s else "")
-            for n, s, c in zip(source_names, sizes, epoch_counts)
-        )
+        if weighted_mix:
+            offset = 0
+            shares = {}
+            for n, s in zip(source_names, sizes):
+                shares[n] = float(mix_weights[offset : offset + s].sum())
+                offset += s
+            label = "equal-mix" if custom_proportions is None else "mix-proportions"
+            mix = "  ".join(f"{n}={s}({shares[n]:.0%} draws)" for n, s in zip(source_names, sizes))
+            mix = f"{label} {mix}"
+        else:
+            mix = "  ".join(
+                f"{n}={s}" + (f"(x{c / s:.2g})" if c != s else "")
+                for n, s, c in zip(source_names, sizes, epoch_counts)
+            )
         val_desc = ("  val " + " ".join(f"{n}={len(l.dataset)}" for n, l in val_loaders.items())
                     if val_loaders else "  (no val)")
+        draws = len(train_sampler) * max(world_size, 1) if weighted_mix else len(train_set)
         print(
-            f"train samples/epoch={len(train_set)} [{mix}]{val_desc}"
+            f"train samples/epoch={draws} [{mix}]{val_desc}"
             + f"  {image_hw[0]}x{image_hw[1]}"
+            + (f" ->fov-crop {args.fov_crop[0]}x{args.fov_crop[1]}"
+               if args.fov_crop is not None else "")
             + (f" (fov-jitter down to {args.fov_jitter[0]}x{args.fov_jitter[1]})"
                if args.fov_jitter is not None else "")
             + f"  frames/sample={args.num_frames}"
+            + f"  sampling={args.sampling}"
+            + (f"/{args.window_size}" if args.sampling == "window" else "")
             + f"  world_size={world_size}"
         )
 
