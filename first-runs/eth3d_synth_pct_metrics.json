@@ -1,0 +1,41 @@
+{
+ "num_frames": 8,
+ "sampling": "covisibility",
+ "seed": 1234,
+ "repeats": 3,
+ "num_scenes": 13,
+ "results": {
+  "0% synthetic": {
+   "checkpoint": "/home/grace/vggt-omega/runs/dl3dv-only-4k/final.pt",
+   "step": 40000,
+   "delta_1.25_ss": 0.84886023020133,
+   "auc_at_30": 0.07612942904233932,
+   "abs_rel_ss": 0.12776842980812758,
+   "rra_at_5": 0.10073260217905045
+  },
+  "50% synthetic": {
+   "checkpoint": "/home/grace/vggt-omega/runs/dl3dv-2-megasynth-4-tartanair-4/final.pt",
+   "step": 40000,
+   "delta_1.25_ss": 0.7965214649836222,
+   "auc_at_30": 0.05869963392615318,
+   "abs_rel_ss": 0.14696165097829622,
+   "rra_at_5": 0.08699633926153183
+  },
+  "80% synthetic": {
+   "checkpoint": "/home/grace/vggt-omega/runs/dl3dv-20-megasynth-40-hypersim-20-tartanair-20/final.pt",
+   "step": 40000,
+   "delta_1.25_ss": 0.7872990194039468,
+   "auc_at_30": 0.034676436334848404,
+   "abs_rel_ss": 0.1517995876761583,
+   "rra_at_5": 0.04212454333901405
+  },
+  "100% synthetic": {
+   "checkpoint": "/home/grace/vggt-omega/runs/megasynth-2-hypersim-4-tartanair-4/final.pt",
+   "step": 40000,
+   "delta_1.25_ss": 0.6794089445701013,
+   "auc_at_30": 0.032478634268045425,
+   "abs_rel_ss": 0.20022690353485254,
+   "rra_at_5": 0.026556776836514473
+  }
+ }
+}
