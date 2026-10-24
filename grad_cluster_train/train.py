@@ -101,6 +101,7 @@ from training.model_config import PRESETS, build_model, parameter_summary  # noq
 
 from grad_cluster_train.grad_sampler import (  # noqa: E402
     GradClusterSampler,
+    KeyedDataset,
     recompute_clusters,
 )
 
@@ -228,6 +229,13 @@ def save_checkpoint(path: Path, model, optimizer, scheduler, step: int, args) ->
     )
 
 
+def save_weights(path: Path, model, step: int, args) -> None:
+    """Model-only checkpoint (~1/3 the size of `save_checkpoint`); not resumable."""
+    raw = model.module if isinstance(model, DistributedDataParallel) else model
+    path.parent.mkdir(parents=True, exist_ok=True)
+    torch.save({"step": step, "model": raw.state_dict(), "args": vars(args)}, path)
+
+
 # --------------------------------------------------------------------------- #
 # argument parsing
 # --------------------------------------------------------------------------- #
@@ -327,6 +335,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--val-every",  type=int, default=2000)
     p.add_argument("--val-batches", type=int, default=32)
     p.add_argument("--save-every", type=int, default=5000)
+    p.add_argument(
+        "--keep-steps", type=int, nargs="+", default=[], metavar="STEP",
+        help="also write model-only weights to <out>/stepNNNNNN.pt at these steps,\n"
+             "for checkpoint averaging (see average_checkpoints.py).",
+    )
     p.add_argument("--resume", type=Path, default=None)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--overfit", type=int, default=0)
@@ -404,6 +417,11 @@ def build_parser() -> argparse.ArgumentParser:
              "dataset the same mass; ALPHA=1 leaves the pool unchanged but still\n"
              "draws with replacement (a control).  Uniform until the first clustering.\n"
              "Not combinable with --complexity-weighting/--mix-proportions/--equal-mix.",
+    )
+    p.add_argument(
+        "--cluster-balance-shuffle", action="store_true",
+        help="control for --cluster-balance: shuffle the token-cluster labels within each\n"
+             "dataset before weighting, so cluster sizes are kept but membership is random.",
     )
 
     return p
@@ -627,6 +645,8 @@ def main() -> int:
             raise SystemExit("--cluster-balance samples the full pools; omit --scene-list")
         if any(abs(listed_weights[n] - 1.0) > 1e-9 for n in train_parts):
             raise SystemExit("--cluster-balance keeps the pool shares; omit --*-weight")
+    if args.cluster_balance_shuffle and args.cluster_balance is None:
+        raise SystemExit("--cluster-balance-shuffle needs --cluster-balance")
     resample = args.complexity_weighting or args.cluster_balance is not None
     epoch_size = len(train_set)
     grad_sampler = GradClusterSampler(
@@ -635,11 +655,15 @@ def main() -> int:
         rank=rank,
         world_size=world_size,
         seed=args.seed,
+        keyed=True,
     )
     if weighted_mix:
         grad_sampler.set_scene_weights(dataset_mix_weights(source_names, sizes, custom_proportions))
+    # Keyed draws make each clip a function of (seed, epoch, scene), not OS
+    # entropy, so a run is reproducible up to GPU nondeterminism and two arms
+    # with the same seed share clips wherever they share draws.
     train_loader = DataLoader(
-        train_set,
+        KeyedDataset(train_set, train_parts.values()),
         batch_size=args.batch_size,
         sampler=grad_sampler,
         num_workers=args.workers,
@@ -900,6 +924,8 @@ def main() -> int:
                 save_checkpoint(
                     args.out / "latest.pt", ddp_model, optimizer, scheduler, step, args
                 )
+            if is_main(rank) and step in args.keep_steps:
+                save_weights(args.out / f"step{step:06d}.pt", ddp_model, step, args)
 
         # ---- end of epoch: gradient cluster recomputation ----
         if use_grad_cluster and epoch % args.grad_cluster_every == 0:
@@ -930,6 +956,7 @@ def main() -> int:
                 complexity_neighbors=args.complexity_neighbors,
                 cluster_balance=args.cluster_balance,
                 scene_groups=grad_groups,
+                cluster_balance_shuffle=args.cluster_balance_shuffle,
             )
             if resample:
                 # Rank 0 computed the weights; every rank must draw the same epoch.

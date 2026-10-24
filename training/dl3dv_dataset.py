@@ -141,6 +141,10 @@ class DL3DVDataset(Dataset):
         self.window_size = window_size
         self.augment = augment and split == "train"
         self.seed = seed
+        # Set per fetch by `KeyedDataset` (grad_cluster_train/grad_sampler.py):
+        # when present it seeds the frame RNG instead of `seed`/OS entropy, so a
+        # training run's clips are a function of (seed, epoch, index).
+        self.rng_key: str | None = None
 
     def __len__(self) -> int:
         return len(self.scenes)
@@ -248,7 +252,10 @@ class DL3DVDataset(Dataset):
     def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
         entry = self.scenes[idx]
         scene_dir = self.root / entry["path"]
-        rng = random.Random(self.seed + idx if self.seed is not None else None)
+        key = getattr(self, "rng_key", None)
+        if key is None:
+            key = self.seed + idx if self.seed is not None else None
+        rng = random.Random(key)
 
         with np.load(scene_dir / "meta.npz", allow_pickle=True) as meta:
             frame_names = [str(x) for x in meta["frame_names"]]

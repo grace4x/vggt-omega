@@ -66,7 +66,7 @@ from typing import Iterator
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, Sampler
+from torch.utils.data import DataLoader, Dataset, Sampler
 
 
 # --------------------------------------------------------------------------- #
@@ -603,6 +603,12 @@ class GradClusterSampler(Sampler):
     (e.g. cluster weight / cluster size from the token-complexity softmax).
     Multi-GPU: the full `epoch_size` sequence is generated identically on every
     rank, then sliced by rank so each GPU sees a complementary subset.
+
+    `keyed=True` yields `(index, key)` pairs for `KeyedDataset` instead of bare
+    indices.  The key is `seed:epoch:index:occurrence`, so two runs with the
+    same seed draw the same clip whenever they draw the same scene in the same
+    epoch -- whatever their samplers' weights -- and a scene drawn twice in one
+    epoch still gets two different clips.
     """
 
     def __init__(
@@ -613,12 +619,14 @@ class GradClusterSampler(Sampler):
         rank: int = 0,
         world_size: int = 1,
         seed: int = 0,
+        keyed: bool = False,
     ) -> None:
         self.n_total = n_total
         self.epoch_size = epoch_size
         self.rank = rank
         self.world_size = world_size
         self.seed = seed
+        self.keyed = keyed
         self._epoch: int = 0
         self.scene_weights: np.ndarray | None = None
 
@@ -647,7 +655,39 @@ class GradClusterSampler(Sampler):
             epoch_indices = rng.choice(self.n_total, self.epoch_size, p=self.scene_weights)
         per_rank = self.epoch_size // self.world_size
         start = self.rank * per_rank
-        yield from epoch_indices[start: start + per_rank].tolist()
+        if not self.keyed:
+            yield from epoch_indices[start: start + per_rank].tolist()
+            return
+        # Occurrences are counted over the whole epoch, so keys agree across ranks.
+        seen: dict[int, int] = {}
+        keys = []
+        for idx in epoch_indices.tolist():
+            occurrence = seen.get(idx, 0)
+            seen[idx] = occurrence + 1
+            keys.append((idx, f"{self.seed}:{self._epoch}:{idx}:{occurrence}"))
+        yield from keys[start: start + per_rank]
+
+
+class KeyedDataset(Dataset):
+    """Unpacks the `(index, key)` pairs of a keyed `GradClusterSampler`.
+
+    Hands the key to every leaf dataset's `rng_key` before the fetch, so frame
+    selection and order reversal are seeded by it rather than by OS entropy.
+    Mutating the leaves is safe: a DataLoader worker fetches one sample at a time.
+    """
+
+    def __init__(self, dataset: Dataset, leaves) -> None:
+        self.dataset = dataset
+        self.leaves = list(leaves)
+
+    def __len__(self) -> int:
+        return len(self.dataset)
+
+    def __getitem__(self, item: tuple[int, str]) -> dict:
+        idx, key = item
+        for leaf in self.leaves:
+            leaf.rng_key = key
+        return self.dataset[idx]
 
 
 # --------------------------------------------------------------------------- #
@@ -677,6 +717,7 @@ def recompute_clusters(
     complexity_neighbors: int = 20,
     cluster_balance: float | None = None,
     scene_groups: np.ndarray | None = None,
+    cluster_balance_shuffle: bool = False,
 ) -> np.ndarray | None:
     """Compute JL-projected gradients, cluster them, and save assignments.
 
@@ -708,6 +749,10 @@ def recompute_clusters(
                               combined with `complexity_tau`.
         scene_groups:         (len(grad_dataset),) int source-dataset id of each
                               scene; the balance is applied inside each group.
+        cluster_balance_shuffle: Control for `cluster_balance`: permute the
+                              token-cluster labels within each group before
+                              weighting, keeping the cluster sizes but not
+                              which scenes share a cluster.
         cosine_center: `"tokens"` (default), `"both"` or `"none"`: which
                        vectors have their mean over scenes subtracted before
                        anything cosine (spherical k-means, complexity).  The
@@ -862,7 +907,16 @@ def recompute_clusters(
                     f"scene_groups has {len(groups)} entries, grad_dataset has {len(grad_dataset)} scenes"
                 )
             valid = np.asarray(valid_indices, dtype=np.int64)
-            per_valid = cluster_balance_weights(token_labels, groups[valid], cluster_balance)
+            balance_labels = token_labels
+            if cluster_balance_shuffle:
+                shuffle_rng = np.random.default_rng(seed + 104729 * epoch)
+                balance_labels = token_labels.copy()
+                valid_groups = groups[valid]
+                for g in np.unique(valid_groups):
+                    members = np.flatnonzero(valid_groups == g)
+                    balance_labels[members] = token_labels[shuffle_rng.permutation(members)]
+                print("  [cluster-balance] labels shuffled within each dataset (control)", flush=True)
+            per_valid = cluster_balance_weights(balance_labels, groups[valid], cluster_balance)
             # Scenes whose gradient pass failed have no cluster; they keep their
             # pool share (weight 1/N) instead of dropping out of training.
             scene_weights = np.full(len(grad_dataset), 1.0 / len(grad_dataset))
@@ -882,6 +936,7 @@ def recompute_clusters(
             cw = dict(
                 scene_weights=scene_weights,
                 cluster_balance=np.array(cluster_balance),
+                cluster_balance_shuffle=np.array(cluster_balance_shuffle),
             )
 
         if out_dir is not None:
